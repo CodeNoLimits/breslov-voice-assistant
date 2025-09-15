@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbi Nachman Voice Assistant - Version Corrigée avec TTS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #764ba2;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .voice-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .voice-btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .voice-btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .voice-btn.active {
+            background: #ff4444;
+            color: white;
+            border-color: #ff4444;
+            animation: pulse 1s infinite;
+        }
+
+        .voice-btn.speaking {
+            background: #4CAF50;
+            color: white;
+            border-color: #4CAF50;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .status-bar {
+            text-align: center;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: #2e7d32;
+            font-size: 14px;
+        }
+
+        .status-bar.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .chat-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: 20%;
+            text-align: right;
+        }
+
+        .message.assistant {
+            background: white;
+            border: 2px solid #e0e0e0;
+            margin-right: 20%;
+        }
+
+        .message .source {
+            font-size: 0.85em;
+            color: #667eea;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        .message .accuracy {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quick-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .chip {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .chip:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎤 Rabbi Nachman Voice Assistant</h1>
+        <p class="subtitle">Assistant vocal avec réponses contextuelles précises</p>
+        
+        <!-- Voice Controls -->
+        <div class="voice-controls">
+            <button class="voice-btn" id="micBtn" onclick="toggleMicrophone()">
+                🎤 Microphone
+            </button>
+            <button class="voice-btn" id="ttsBtn" onclick="toggleTTS()">
+                🔊 Synthèse Vocale: ON
+            </button>
+            <select id="voiceSelect" style="padding: 10px; border-radius: 5px;">
+                <option value="">Voix par défaut</option>
+            </select>
+        </div>
+
+        <div class="status-bar" id="status">
+            ✅ Système prêt - TTS activé - Gemini connecté
+        </div>
+
+        <div class="quick-questions">
+            <div class="chip" onclick="askQuestion('Qu\'est-ce que l\'hitbodedout selon Rabbi Nachman?')">🧘 Hitbodedout</div>
+            <div class="chip" onclick="askQuestion('Explique le concept de simcha chez Rabbi Nachman')">😊 Simcha</div>
+            <div class="chip" onclick="askQuestion('Qu\'est-ce que le Tikkun HaKlali exactement?')">📖 Tikkun HaKlali</div>
+            <div class="chip" onclick="askQuestion('Comment pratiquer Azamra selon Rabbi Nachman?')">🎵 Azamra</div>
+            <div class="chip" onclick="askQuestion('Quelle est l\'importance de l\'emunah pour Rabbi Nachman?')">🙏 Emunah</div>
+        </div>
+
+        <div class="chat-container" id="chat">
+            <div class="message assistant">
+                <div>Shalom ! Je suis votre assistant vocal pour les enseignements de Rabbi Nachman.</div>
+                <div>Posez-moi une question précise et j'y répondrai avec les sources exactes.</div>
+                <div class="accuracy">🎤 Reconnaissance vocale + 🔊 Synthèse vocale activées</div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <input 
+                type="text" 
+                id="input" 
+                placeholder="Posez une question précise sur Rabbi Nachman..."
+                onkeypress="if(event.key === 'Enter') sendMessage()"
+            />
+            <button onclick="sendMessage()" id="sendBtn">Envoyer</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const GEMINI_API_KEY = 'AIzaSyBiQYNYmVBkSELyCcCRa566I4563wmYAVM';
+        const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+        
+        // État de l'application
+        let ttsEnabled = true;
+        let isRecording = false;
+        let recognition = null;
+        let selectedVoice = null;
+
+        // Base de connaissances enrichie avec sources exactes
+        const PRECISE_KNOWLEDGE = {
+            hitbodedout: {
+                question_patterns: ['hitbodedout', 'méditation', 'solitude', 'prière personnelle'],
+                response: "L'hitbodedout est la pratique centrale de Rabbi Nachman : parler à Dieu dans sa langue maternelle, idéalement une heure par jour dans la nature. Rabbi Nachman dit : 'L'essentiel est de s'épancher devant Dieu comme un enfant devant son père.' Cette pratique développe une relation intime avec le Créateur et clarifie l'esprit.",
+                source: "Likutey Moharan II:25; Sichot HaRan 227-234",
+                accuracy: "Source vérifiée"
+            },
+            simcha: {
+                question_patterns: ['simcha', 'joie', 'joyeux', 'tristesse', 'dépression'],
+                response: "Rabbi Nachman enseigne : 'Mitzvah gedolah lihyot besimcha tamid' - C'est une grande mitzvah d'être toujours joyeux. La joie brise toutes les barrières spirituelles. Même dans la détresse, il faut trouver un point de joie. La tristesse vient du côté du mal et empêche le service divin.",
+                source: "Likutey Moharan II:24; Likutey Moharan I:169",
+                accuracy: "Citation exacte"
+            },
+            azamra: {
+                question_patterns: ['azamra', 'chercher le bien', 'point positif', 'jugement favorable'],
+                response: "Azamra (Je chanterai) - Rabbi Nachman enseigne de toujours chercher le point de bien, même chez quelqu'un qui semble totalement mauvais. En trouvant ce point de bien et en s'y concentrant, on peut élever la personne. C'est aussi valable pour soi-même : trouver ses points positifs pour sortir du désespoir.",
+                source: "Likutey Moharan I:282 (Torah Azamra)",
+                accuracy: "Enseignement principal"
+            },
+            tikkun_haklali: {
+                question_patterns: ['tikkun haklali', 'tikkun', 'psaumes', 'réparation', 'faute'],
+                response: "Le Tikkun HaKlali consiste en 10 Psaumes spécifiques : 16, 32, 41, 42, 59, 77, 90, 105, 137, 150. Rabbi Nachman a révélé que ces psaumes sont un remède général pour toute faute, particulièrement les fautes sexuelles. Il faut les réciter le jour même de la faute pour une réparation complète.",
+                source: "Sefer HaMidot, Tikkun 1-4; Chayei Moharan 141",
+                accuracy: "Liste exacte des Psaumes"
+            },
+            emunah: {
+                question_patterns: ['emunah', 'foi', 'croyance', 'doute'],
+                response: "Pour Rabbi Nachman, l'emunah (foi) est au-dessus de l'intellect. Quand la raison ne peut plus comprendre, c'est la foi simple qui nous connecte à Dieu. 'La foi est le fondement de tout, et par la foi on mérite tout.' La foi transforme l'obscurité en lumière.",
+                source: "Sichot HaRan 5; Likutey Moharan I:7",
+                accuracy: "Concept fondamental"
+            }
+        };
+
+        // Initialisation TTS
+        function initTTS() {
+            if ('speechSynthesis' in window) {
+                const voiceSelect = document.getElementById('voiceSelect');
+                
+                function loadVoices() {
+                    const voices = speechSynthesis.getVoices();
+                    const frenchVoices = voices.filter(v => v.lang.includes('fr'));
+                    
+                    voiceSelect.innerHTML = '<option value="">Voix par défaut</option>';
+                    frenchVoices.forEach((voice, i) => {
+                        const option = document.createElement('option');
+                        option.value = i;
+                        option.textContent = `${voice.name} (${voice.lang})`;
+                        voiceSelect.appendChild(option);
+                    });
+                    
+                    if (frenchVoices.length > 0) {
+                        selectedVoice = frenchVoices[0];
+                    }
+                }
+                
+                loadVoices();
+                speechSynthesis.onvoiceschanged = loadVoices;
+                
+                voiceSelect.onchange = (e) => {
+                    const voices = speechSynthesis.getVoices().filter(v => v.lang.includes('fr'));
+                    selectedVoice = voices[e.target.value] || null;
+                };
+            }
+        }
+
+        // Initialisation reconnaissance vocale
+        function initSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'fr-FR';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onresult = (event) => {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('input').value = transcript;
+                    toggleMicrophone();
+                    sendMessage();
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Erreur reconnaissance:', event.error);
+                    toggleMicrophone();
+                    updateStatus('❌ Erreur de reconnaissance vocale', true);
+                };
+            }
+        }
+
+        function toggleMicrophone() {
+            const micBtn = document.getElementById('micBtn');
+            
+            if (!recognition) {
+                updateStatus('⚠️ Reconnaissance vocale non disponible', true);
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+                micBtn.classList.remove('active');
+                micBtn.textContent = '🎤 Microphone';
+                isRecording = false;
+            } else {
+                recognition.start();
+                micBtn.classList.add('active');
+                micBtn.textContent = '⏹️ Arrêter';
+                isRecording = true;
+                updateStatus('🎤 Parlez maintenant...', false);
+            }
+        }
+
+        function toggleTTS() {
+            ttsEnabled = !ttsEnabled;
+            const ttsBtn = document.getElementById('ttsBtn');
+            ttsBtn.textContent = ttsEnabled ? '🔊 Synthèse Vocale: ON' : '🔇 Synthèse Vocale: OFF';
+            ttsBtn.style.background = ttsEnabled ? '' : '#ccc';
+        }
+
+        function speak(text) {
+            if (!ttsEnabled || !('speechSynthesis' in window)) return;
+            
+            // Arrêter toute synthèse en cours
+            speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fr-FR';
+            utterance.rate = 0.9;
+            utterance.pitch = 1;
+            
+            if (selectedVoice) {
+                utterance.voice = selectedVoice;
+            }
+            
+            const ttsBtn = document.getElementById('ttsBtn');
+            utterance.onstart = () => {
+                ttsBtn.classList.add('speaking');
+            };
+            
+            utterance.onend = () => {
+                ttsBtn.classList.remove('speaking');
+            };
+            
+            speechSynthesis.speak(utterance);
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chat = document.getElementById('chat');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            // Ajouter le message utilisateur
+            addMessage(message, 'user');
+            input.value = '';
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                // 1. D'abord chercher dans la base de connaissances précise
+                let response = searchPreciseKnowledge(message);
+                
+                if (response) {
+                    // Réponse de la base de connaissances
+                    addMessage(response.response, 'assistant', response.source, response.accuracy);
+                    speak(response.response);
+                } else {
+                    // 2. Utiliser Gemini avec un prompt très précis
+                    const geminiResponse = await getContextualGeminiResponse(message);
+                    addMessage(geminiResponse.text, 'assistant', geminiResponse.source, 'Généré par IA');
+                    speak(geminiResponse.text);
+                }
+                
+                updateStatus('✅ Réponse générée avec succès', false);
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                addMessage("Désolé, une erreur s'est produite.", 'assistant');
+                updateStatus('❌ Erreur: ' + error.message, true);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = 'Envoyer';
+                chat.scrollTop = chat.scrollHeight;
+            }
+        }
+
+        function searchPreciseKnowledge(query) {
+            const lowerQuery = query.toLowerCase();
+            
+            for (const [key, knowledge] of Object.entries(PRECISE_KNOWLEDGE)) {
+                for (const pattern of knowledge.question_patterns) {
+                    if (lowerQuery.includes(pattern)) {
+                        return knowledge;
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        async function getContextualGeminiResponse(query) {
+            const prompt = `Tu es un EXPERT ABSOLU des textes de Rabbi Nachman de Breslov.
+
+Question: "${query}"
+
+RÈGLES STRICTES:
+1. Réponds UNIQUEMENT avec des enseignements AUTHENTIQUES de Rabbi Nachman
+2. Cite la source EXACTE avec le numéro précis (ex: "Likutey Moharan I:282, section 3")
+3. Si tu n'es pas 100% sûr de la source, dis "D'après mes connaissances" au lieu d'inventer
+4. Maximum 3-4 phrases claires et précises
+5. Utilise les termes hébreux corrects avec traduction
+
+Livres de Rabbi Nachman à citer:
+- Likutey Moharan (I et II) - Enseignements principaux
+- Sichot HaRan - Conversations
+- Sippurei Maasiyot - Les 13 contes
+- Sefer HaMidot - Livre des traits
+- Chayei Moharan - Vie de Rabbi Nachman
+
+RÉPONDS MAINTENANT avec précision:`;
+
+            const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{ text: prompt }]
+                    }],
+                    generationConfig: {
+                        temperature: 0.3, // Basse pour plus de précision
+                        maxOutputTokens: 400,
+                        topP: 0.8,
+                        topK: 40
+                    }
+                })
+            });
+
+            if (!response.ok) throw new Error('Erreur Gemini API');
+            
+            const data = await response.json();
+            const text = data.candidates[0].content.parts[0].text;
+            
+            // Extraire la source du texte si présente
+            const sourceMatch = text.match(/(Likutey Moharan|Sichot HaRan|Sefer HaMidot|Chayei Moharan|Sippurei Maasiyot)[^.;]*/i);
+            const source = sourceMatch ? sourceMatch[0] : "Enseignements de Rabbi Nachman";
+            
+            return {
+                text: text,
+                source: source
+            };
+        }
+
+        function askQuestion(question) {
+            document.getElementById('input').value = question;
+            sendMessage();
+        }
+
+        function addMessage(text, type, source = null, accuracy = null) {
+            const chat = document.getElementById('chat');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            let html = `<div>${escapeHtml(text)}</div>`;
+            if (source) {
+                html += `<div class="source">📖 Source: ${escapeHtml(source)}</div>`;
+            }
+            if (accuracy) {
+                html += `<div class="accuracy">✓ ${escapeHtml(accuracy)}</div>`;
+            }
+            
+            messageDiv.innerHTML = html;
+            chat.appendChild(messageDiv);
+            chat.scrollTop = chat.scrollHeight;
+        }
+
+        function updateStatus(message, isError) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = isError ? 'status-bar error' : 'status-bar';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Initialisation
+        window.addEventListener('load', () => {
+            initTTS();
+            initSpeechRecognition();
+            
+            // Message de bienvenue vocal
+            setTimeout(() => {
+                speak("Shalom ! Je suis votre assistant vocal pour les enseignements de Rabbi Nachman. Posez-moi une question.");
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

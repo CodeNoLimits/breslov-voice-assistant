@@ -1,0 +1,114 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with pgvector extension
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: rabbi-nachman-postgres
+    environment:
+      POSTGRES_USER: rabbi_nachman
+      POSTGRES_PASSWORD: secure_password_change_me
+      POSTGRES_DB: rabbi_nachman_voice
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - rabbi-nachman-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U rabbi_nachman"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching
+  redis:
+    image: redis:7-alpine
+    container_name: rabbi-nachman-redis
+    command: redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - rabbi-nachman-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rabbi-nachman-backend
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: postgresql://rabbi_nachman:secure_password_change_me@postgres:5432/rabbi_nachman_voice
+      REDIS_URL: redis://redis:6379
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      JWT_SECRET: ${JWT_SECRET:-default_jwt_secret_change_me}
+      CORS_ORIGIN: http://localhost:5173
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend/data:/app/data
+      - ./backend/logs:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - rabbi-nachman-network
+    restart: unless-stopped
+
+  # Frontend (development)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: rabbi-nachman-frontend
+    environment:
+      VITE_API_URL: http://localhost:3000/api
+      VITE_WS_URL: ws://localhost:3000
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    networks:
+      - rabbi-nachman-network
+    depends_on:
+      - backend
+
+  # Nginx (production only)
+  nginx:
+    image: nginx:alpine
+    container_name: rabbi-nachman-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/ssl:/etc/nginx/ssl
+      - ./frontend/dist:/usr/share/nginx/html
+    networks:
+      - rabbi-nachman-network
+    depends_on:
+      - backend
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  rabbi-nachman-network:
+    driver: bridge

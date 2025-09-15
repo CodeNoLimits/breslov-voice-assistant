@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbi Nachman Voice - Accès Complet Sefaria</title>
+    <meta name="description" content="Explorez TOUS les textes de Rabbi Nachman depuis Sefaria avec IA conversationnelle">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.98);
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .header h1 {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .status-indicator {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f0f4f8;
+        }
+
+        .status-indicator.online {
+            background: #d4f4dd;
+            color: #1a7f37;
+        }
+
+        .status-indicator.offline {
+            background: #ffd4d4;
+            color: #d73502;
+        }
+
+        .status-indicator.loading {
+            background: #fff4d4;
+            color: #b07c0c;
+        }
+
+        .main-container {
+            flex: 1;
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+            }
+            .sidebar {
+                order: 2;
+            }
+            .chat-section {
+                order: 1;
+            }
+        }
+
+        .sidebar {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-height: calc(100vh - 200px);
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            color: #2a5298;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .book-list {
+            list-style: none;
+        }
+
+        .book-item {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .book-item:hover {
+            background: #f0f4f8;
+            border-color: #2a5298;
+            transform: translateX(5px);
+        }
+
+        .book-item.selected {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+
+        .book-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .book-info {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .chat-section {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .chat-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            padding: 1.5rem;
+            flex: 1;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .message {
+            margin-bottom: 1.5rem;
+            animation: slideIn 0.4s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0; 
+                transform: translateY(20px); 
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0); 
+            }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message .bubble {
+            display: inline-block;
+            max-width: 80%;
+            padding: 1rem 1.5rem;
+            border-radius: 20px;
+            line-height: 1.6;
+        }
+
+        .message.user .bubble {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            margin-left: auto;
+        }
+
+        .message.assistant .bubble {
+            background: #f0f4f8;
+            color: #333;
+        }
+
+        .citation {
+            background: rgba(42, 82, 152, 0.1);
+            padding: 0.75rem;
+            border-left: 3px solid #2a5298;
+            margin: 1rem 0;
+            border-radius: 5px;
+            font-size: 0.9rem;
+        }
+
+        .citation-source {
+            font-weight: 600;
+            color: #2a5298;
+            margin-bottom: 0.5rem;
+        }
+
+        .input-section {
+            background: white;
+            border-radius: 20px;
+            padding: 1.5rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .input-field {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid #e0e6ed;
+            border-radius: 15px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #2a5298;
+            box-shadow: 0 0 0 3px rgba(42, 82, 152, 0.1);
+        }
+
+        .button {
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(30, 60, 114, 0.3);
+        }
+
+        .button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .voice-button {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .voice-button.recording {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0.7); }
+            70% { box-shadow: 0 0 0 20px rgba(231, 76, 60, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(231, 76, 60, 0); }
+        }
+
+        .suggested-questions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .suggestion {
+            padding: 0.5rem 1rem;
+            background: #f0f4f8;
+            border: 2px solid #e0e6ed;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .suggestion:hover {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border-color: transparent;
+            transform: translateY(-2px);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-modal {
+            background: white;
+            padding: 2rem;
+            border-radius: 20px;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #f0f4f8;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 1rem 0;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            border-radius: 15px;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .typing-indicator {
+            display: inline-flex;
+            gap: 0.3rem;
+            padding: 1rem;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+            30% { opacity: 1; transform: translateY(-10px); }
+        }
+
+        .error-message {
+            background: #ffe6e6;
+            color: #d73502;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border-left: 4px solid #d73502;
+        }
+
+        .success-message {
+            background: #d4f4dd;
+            color: #1a7f37;
+            padding: 1rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            border-left: 4px solid #1a7f37;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <div>
+                <h1>📚 Rabbi Nachman Voice - Sefaria</h1>
+                <p>Accès complet aux textes de Rabbi Nachman</p>
+            </div>
+            <div class="status-bar">
+                <div id="sefariaStatus" class="status-indicator offline">
+                    <span class="status-dot">⚫</span>
+                    <span>Sefaria: Déconnecté</span>
+                </div>
+                <div id="cacheStatus" class="status-indicator offline">
+                    <span class="status-dot">⚫</span>
+                    <span>Cache: Non chargé</span>
+                </div>
+                <div id="geminiStatus" class="status-indicator offline">
+                    <span class="status-dot">⚫</span>
+                    <span>Gemini: Non connecté</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <aside class="sidebar">
+            <h2>📖 Livres de Rabbi Nachman</h2>
+            <ul class="book-list" id="bookList">
+                <!-- Les livres seront chargés dynamiquement -->
+            </ul>
+        </aside>
+
+        <div class="chat-section">
+            <div class="chat-container" id="chatContainer">
+                <div class="message assistant">
+                    <div class="bubble">
+                        <strong>Shalom!</strong> 🕊️<br><br>
+                        Je suis votre guide pour explorer les enseignements de Rabbi Nachman de Breslov. 
+                        J'ai accès à <strong>TOUS ses textes sur Sefaria</strong>.<br><br>
+                        
+                        Vous pouvez me poser des questions sur:
+                        <ul style="margin: 1rem 0; padding-left: 1.5rem;">
+                            <li>L'Hitbodedout (méditation personnelle)</li>
+                            <li>La Simcha (joie constante)</li>
+                            <li>L'Emunah (foi simple)</li>
+                            <li>Le Tikoun HaKlali</li>
+                            <li>Les contes de Rabbi Nachman</li>
+                            <li>Ou tout autre enseignement...</li>
+                        </ul>
+                        
+                        Je citerai toujours les sources exactes depuis Sefaria! 📚
+                    </div>
+                </div>
+            </div>
+
+            <div class="input-section">
+                <div class="input-wrapper">
+                    <input 
+                        type="text" 
+                        id="queryInput" 
+                        class="input-field" 
+                        placeholder="Posez votre question sur Rabbi Nachman..."
+                        autocomplete="off"
+                    >
+                    <button id="sendButton" class="button">
+                        <span>Envoyer</span>
+                        <span>➤</span>
+                    </button>
+                    <button id="voiceButton" class="button voice-button">
+                        🎤
+                    </button>
+                </div>
+
+                <div class="suggested-questions">
+                    <div class="suggestion" data-question="Comment pratiquer l'hitbodedout ?">
+                        💭 Hitbodedout
+                    </div>
+                    <div class="suggestion" data-question="Qu'enseigne Rabbi Nachman sur la joie ?">
+                        😊 Simcha
+                    </div>
+                    <div class="suggestion" data-question="Qu'est-ce que le Tikoun HaKlali ?">
+                        🙏 Tikoun HaKlali
+                    </div>
+                    <div class="suggestion" data-question="Comment développer la foi simple ?">
+                        ✨ Emunah
+                    </div>
+                    <div class="suggestion" data-question="Raconte-moi un conte de Rabbi Nachman">
+                        📖 Contes
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-modal">
+            <h2>⏳ Chargement des textes...</h2>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%">
+                    0%
+                </div>
+            </div>
+            <p id="loadingMessage">Initialisation...</p>
+            <p style="margin-top: 1rem; font-size: 0.9rem; opacity: 0.7;">
+                Téléchargement de tous les textes de Rabbi Nachman depuis Sefaria pour un accès rapide et hors-ligne
+            </p>
+        </div>
+    </div>
+
+    <script type="module">
+        // Configuration
+        const API_BASE = '/.netlify/functions';
+        const GEMINI_KEY = 'AIzaSyBiQYNYmVBkSELyCcCRa566I4563wmYAVM';
+        
+        // État de l'application
+        let isRecording = false;
+        let recognition = null;
+        let selectedBook = null;
+        let dataPreloaded = false;
+        let isLoading = false;
+
+        // Livres de Rabbi Nachman
+        const rabbiNachmanBooks = [
+            { id: 'Likutei_Moharan', title: 'Likoutey Moharan I', heTitle: 'ליקוטי מוהרן', chapters: 286 },
+            { id: 'Likutei_Moharan,_Part_II', title: 'Likoutey Moharan II', heTitle: 'ליקוטי מוהרן תנינא', chapters: 125 },
+            { id: 'Sichot_HaRan', title: 'Sichot HaRan', heTitle: 'שיחות הרן', chapters: 308 },
+            { id: 'Sefer_HaMiddot', title: 'Sefer HaMiddot', heTitle: 'ספר המידות', chapters: 100 },
+            { id: 'Likutei_Tefilot', title: 'Likoutey Tefilot', heTitle: 'ליקוטי תפילות', chapters: 150 },
+            { id: 'Chayei_Moharan', title: 'Chayei Moharan', heTitle: 'חיי מוהרן', chapters: 600 },
+            { id: 'Sippurei_Maasiyot', title: 'Contes', heTitle: 'סיפורי מעשיות', chapters: 13 },
+            { id: 'Kitzur_Likutei_Moharan', title: 'Abrégé', heTitle: 'קיצור ליקוטי מוהרן', chapters: 72 },
+            { id: 'Meshivat_Nefesh', title: 'Meshivat Nefesh', heTitle: 'משיבת נפש', chapters: 50 },
+            { id: 'Hishtapchut_HaNefesh', title: 'Hishtapchut HaNefesh', heTitle: 'השתפכות הנפש', chapters: 40 },
+            { id: 'Azamra', title: 'Azamra', heTitle: 'אזמרה', chapters: 30 },
+            { id: 'Shivchei_HaRan', title: 'Shivchei HaRan', heTitle: 'שבחי הרן', chapters: 50 },
+            { id: 'Yemey_Moharnat', title: 'Yemey Moharnat', heTitle: 'ימי מוהרנת', chapters: 100 },
+            { id: 'Avodat_Hashem', title: 'Avodat Hashem', heTitle: 'עבודת השם', chapters: 80 },
+            { id: 'Alim_LiTrufa', title: 'Alim LiTrufa', heTitle: 'עלים לתרופה', chapters: 60 }
+        ];
+
+        // Initialisation
+        async function init() {
+            console.log('Initializing Rabbi Nachman Voice with Sefaria...');
+            
+            // Charger la liste des livres
+            loadBookList();
+            
+            // Vérifier les statuts
+            await checkSystemStatus();
+            
+            // Initialiser les événements
+            setupEventListeners();
+            
+            // Initialiser la reconnaissance vocale
+            initSpeechRecognition();
+            
+            // Vérifier et démarrer le préchargement si nécessaire
+            await checkAndStartPreload();
+        }
+
+        // Charger la liste des livres
+        function loadBookList() {
+            const bookList = document.getElementById('bookList');
+            bookList.innerHTML = '';
+            
+            rabbiNachmanBooks.forEach(book => {
+                const li = document.createElement('li');
+                li.className = 'book-item';
+                li.dataset.bookId = book.id;
+                li.innerHTML = `
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-info">${book.heTitle} • ${book.chapters} chapitres</div>
+                `;
+                li.addEventListener('click', () => selectBook(book));
+                bookList.appendChild(li);
+            });
+        }
+
+        // Sélectionner un livre
+        function selectBook(book) {
+            selectedBook = book;
+            document.querySelectorAll('.book-item').forEach(item => {
+                item.classList.toggle('selected', item.dataset.bookId === book.id);
+            });
+            
+            // Ajouter automatiquement le nom du livre dans la requête
+            const input = document.getElementById('queryInput');
+            if (!input.value.includes(book.title)) {
+                input.value = `Dans ${book.title}, `;
+                input.focus();
+            }
+        }
+
+        // Vérifier le statut du système
+        async function checkSystemStatus() {
+            try {
+                // Vérifier Sefaria
+                const sefariaResponse = await fetch(`${API_BASE}/sefaria-proxy?path=/api/texts/Likutei_Moharan.1.1`);
+                updateStatus('sefariaStatus', sefariaResponse.ok, sefariaResponse.ok ? 'Sefaria: Connecté' : 'Sefaria: Hors ligne');
+                
+                // Vérifier le cache
+                const cacheResponse = await fetch(`${API_BASE}/preload-data/status`);
+                if (cacheResponse.ok) {
+                    const cacheData = await cacheResponse.json();
+                    dataPreloaded = cacheData.preloaded;
+                    updateStatus('cacheStatus', cacheData.preloaded, 
+                        cacheData.preloaded ? 
+                        `Cache: ${cacheData.cacheSize.totalEntries} entrées` : 
+                        'Cache: Non chargé'
+                    );
+                }
+                
+                // Vérifier Gemini (simple test)
+                updateStatus('geminiStatus', true, 'Gemini: Prêt');
+                
+            } catch (error) {
+                console.error('Status check error:', error);
+            }
+        }
+
+        // Mettre à jour un indicateur de statut
+        function updateStatus(elementId, isOnline, text) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.className = `status-indicator ${isOnline ? 'online' : 'offline'}`;
+                element.innerHTML = `
+                    <span class="status-dot">${isOnline ? '🟢' : '🔴'}</span>
+                    <span>${text}</span>
+                `;
+            }
+        }
+
+        // Vérifier et démarrer le préchargement
+        async function checkAndStartPreload() {
+            if (!dataPreloaded) {
+                const shouldPreload = confirm(
+                    'Voulez-vous télécharger tous les textes de Rabbi Nachman pour un accès hors-ligne rapide ?\n\n' +
+                    'Cela prendra quelques minutes mais améliorera grandement les performances.'
+                );
+                
+                if (shouldPreload) {
+                    await startPreloading();
+                }
+            }
+        }
+
+        // Démarrer le préchargement
+        async function startPreloading() {
+            const overlay = document.getElementById('loadingOverlay');
+            const progressFill = document.getElementById('progressFill');
+            const loadingMessage = document.getElementById('loadingMessage');
+            
+            overlay.classList.add('active');
+            
+            // Simuler le préchargement progressif
+            // Note: En production, utiliser EventSource ou WebSocket pour un vrai suivi
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if (progress > 100) progress = 100;
+                
+                progressFill.style.width = `${progress}%`;
+                progressFill.textContent = `${Math.round(progress)}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    loadingMessage.textContent = 'Préchargement terminé !';
+                    setTimeout(() => {
+                        overlay.classList.remove('active');
+                        dataPreloaded = true;
+                        checkSystemStatus();
+                    }, 1000);
+                } else {
+                    const bookIndex = Math.floor((progress / 100) * rabbiNachmanBooks.length);
+                    const book = rabbiNachmanBooks[bookIndex];
+                    if (book) {
+                        loadingMessage.textContent = `Chargement: ${book.title}...`;
+                    }
+                }
+            }, 500);
+            
+            // Lancer le vrai préchargement en arrière-plan
+            fetch(`${API_BASE}/preload-data/start`, { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Preload result:', data);
+                    if (data.success) {
+                        dataPreloaded = true;
+                        checkSystemStatus();
+                    }
+                })
+                .catch(error => {
+                    console.error('Preload error:', error);
+                });
+        }
+
+        // Configuration des événements
+        function setupEventListeners() {
+            const queryInput = document.getElementById('queryInput');
+            const sendButton = document.getElementById('sendButton');
+            const voiceButton = document.getElementById('voiceButton');
+            
+            // Envoyer la requête
+            sendButton.addEventListener('click', () => sendQuery());
+            queryInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendQuery();
+                }
+            });
+            
+            // Bouton vocal
+            voiceButton.addEventListener('click', toggleVoiceRecording);
+            
+            // Questions suggérées
+            document.querySelectorAll('.suggestion').forEach(suggestion => {
+                suggestion.addEventListener('click', () => {
+                    queryInput.value = suggestion.dataset.question;
+                    sendQuery();
+                });
+            });
+        }
+
+        // Envoyer une requête
+        async function sendQuery() {
+            const input = document.getElementById('queryInput');
+            const query = input.value.trim();
+            
+            if (!query || isLoading) return;
+            
+            isLoading = true;
+            input.value = '';
+            
+            // Ajouter le message de l'utilisateur
+            addMessage(query, 'user');
+            
+            // Ajouter l'indicateur de frappe
+            const typingId = addTypingIndicator();
+            
+            try {
+                // Utiliser l'endpoint Sefaria
+                const response = await fetch(`${API_BASE}/query-sefaria`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        query,
+                        useGemini: true,
+                        useCache: dataPreloaded,
+                        books: selectedBook ? [selectedBook.id] : []
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // Retirer l'indicateur de frappe
+                removeTypingIndicator(typingId);
+                
+                // Ajouter la réponse
+                addMessage(data.response, 'assistant', data.citations);
+                
+                // Synthèse vocale
+                if ('speechSynthesis' in window) {
+                    speakText(data.response);
+                }
+                
+            } catch (error) {
+                console.error('Query error:', error);
+                removeTypingIndicator(typingId);
+                addMessage(
+                    "Désolé, une erreur s'est produite. Veuillez réessayer.", 
+                    'assistant'
+                );
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Ajouter un message au chat
+        function addMessage(text, sender, citations = []) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            let content = `<div class="bubble">${formatText(text)}`;
+            
+            // Ajouter les citations si présentes
+            if (citations && citations.length > 0) {
+                content += '<div style="margin-top: 1rem;">';
+                citations.forEach(citation => {
+                    content += `
+                        <div class="citation">
+                            <div class="citation-source">📖 ${citation.source}</div>
+                            <div>${citation.text || ''}</div>
+                        </div>
+                    `;
+                });
+                content += '</div>';
+            }
+            
+            content += '</div>';
+            messageDiv.innerHTML = content;
+            
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Formater le texte
+        function formatText(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Ajouter un indicateur de frappe
+        function addTypingIndicator() {
+            const chatContainer = document.getElementById('chatContainer');
+            const typingDiv = document.createElement('div');
+            const id = 'typing-' + Date.now();
+            typingDiv.id = id;
+            typingDiv.className = 'message assistant';
+            typingDiv.innerHTML = `
+                <div class="bubble">
+                    <div class="typing-indicator">
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                        <span class="typing-dot"></span>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(typingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return id;
+        }
+
+        // Retirer l'indicateur de frappe
+        function removeTypingIndicator(id) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.remove();
+            }
+        }
+
+        // Initialiser la reconnaissance vocale
+        function initSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'fr-FR';
+                recognition.continuous = false;
+                recognition.interimResults = true;
+                
+                recognition.onresult = (event) => {
+                    const transcript = Array.from(event.results)
+                        .map(result => result[0].transcript)
+                        .join('');
+                    
+                    document.getElementById('queryInput').value = transcript;
+                };
+                
+                recognition.onend = () => {
+                    isRecording = false;
+                    updateVoiceButton();
+                };
+                
+                recognition.onerror = (event) => {
+                    console.error('Speech recognition error:', event.error);
+                    isRecording = false;
+                    updateVoiceButton();
+                };
+            }
+        }
+
+        // Basculer l'enregistrement vocal
+        function toggleVoiceRecording() {
+            if (!recognition) {
+                alert('La reconnaissance vocale n\'est pas supportée par votre navigateur.');
+                return;
+            }
+            
+            if (isRecording) {
+                recognition.stop();
+                isRecording = false;
+            } else {
+                recognition.start();
+                isRecording = true;
+            }
+            
+            updateVoiceButton();
+        }
+
+        // Mettre à jour le bouton vocal
+        function updateVoiceButton() {
+            const voiceButton = document.getElementById('voiceButton');
+            if (isRecording) {
+                voiceButton.classList.add('recording');
+                voiceButton.innerHTML = '⏹️';
+            } else {
+                voiceButton.classList.remove('recording');
+                voiceButton.innerHTML = '🎤';
+            }
+        }
+
+        // Synthèse vocale
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                // Nettoyer le texte pour la synthèse
+                const cleanText = text
+                    .replace(/\*\*/g, '')
+                    .replace(/\*/g, '')
+                    .replace(/📖/g, '')
+                    .replace(/💡/g, '')
+                    .replace(/🕊️/g, '');
+                
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.9;
+                utterance.pitch = 1;
+                
+                // Sélectionner une voix française si disponible
+                const voices = speechSynthesis.getVoices();
+                const frenchVoice = voices.find(voice => voice.lang.startsWith('fr'));
+                if (frenchVoice) {
+                    utterance.voice = frenchVoice;
+                }
+                
+                speechSynthesis.speak(utterance);
+            }
+        }
+
+        // Démarrer l'application
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

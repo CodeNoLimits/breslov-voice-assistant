@@ -1,0 +1,33 @@
+{
+  "name": "rabbi-nachman-voice-netlify",
+  "version": "1.0.0",
+  "description": "Rabbi Nachman Voice - Interface Conversationnelle sur Netlify",
+  "scripts": {
+    "build": "echo 'Building for Netlify...' && cp index.html dist/index.html 2>/dev/null || mkdir -p dist && cp index.html dist/",
+    "dev": "npx serve .",
+    "netlify:dev": "netlify dev",
+    "netlify:deploy": "netlify deploy --prod"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@netlify/functions": "^2.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "netlify-cli": "^17.40.0",
+    "typescript": "^5.3.3"
+  },
+  "keywords": [
+    "rabbi-nachman",
+    "breslov",
+    "torah",
+    "spirituality",
+    "jewish",
+    "ai",
+    "gemini",
+    "voice",
+    "netlify"
+  ],
+  "author": "",
+  "license": "MIT"
+}

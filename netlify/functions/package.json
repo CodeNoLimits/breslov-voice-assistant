@@ -1,0 +1,8 @@
+{
+  "name": "rabbi-nachman-functions",
+  "version": "1.0.0",
+  "description": "Netlify Functions for Rabbi Nachman Voice Assistant",
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0"
+  }
+}

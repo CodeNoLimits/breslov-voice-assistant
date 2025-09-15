@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbi Nachman Voice - Deep Search avec Architecture 3 Couches</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #764ba2;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 1.1em;
+        }
+
+        /* Architecture Status */
+        .architecture-panel {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .architecture-title {
+            font-weight: bold;
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .layer-status {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .layer-card {
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            text-align: center;
+        }
+
+        .layer-card.active {
+            background: linear-gradient(135deg, #667eea15, #764ba215);
+            border-color: #764ba2;
+        }
+
+        .layer-name {
+            font-weight: bold;
+            color: #764ba2;
+            margin-bottom: 5px;
+        }
+
+        .layer-info {
+            font-size: 0.9em;
+            color: #666;
+        }
+
+        .layer-status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-left: 5px;
+            background: #ccc;
+        }
+
+        .layer-status-indicator.active {
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .btn:hover {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn.primary {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Test Queries */
+        .test-queries {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .query-chip {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .query-chip:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        /* Search Interface */
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .search-input:focus {
+            border-color: #764ba2;
+        }
+
+        .search-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .search-btn:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        /* Results */
+        .results-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            min-height: 300px;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+
+        .result-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 2px solid #e0e0e0;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .result-title {
+            font-weight: bold;
+            color: #764ba2;
+            font-size: 1.1em;
+        }
+
+        .result-score {
+            background: #667eea;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 15px;
+            font-size: 0.8em;
+        }
+
+        .result-reference {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .result-excerpt {
+            margin-bottom: 10px;
+            line-height: 1.6;
+        }
+
+        .result-keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .keyword-tag {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 0.8em;
+        }
+
+        .highlight {
+            background: yellow;
+            font-weight: bold;
+        }
+
+        /* Status Messages */
+        .status-message {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+        }
+
+        .status-message.success {
+            background: #d4f4dd;
+            color: #2e7d32;
+        }
+
+        .status-message.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-message.info {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #764ba2;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Rabbi Nachman Deep Search</h1>
+        <p class="subtitle">Architecture 3 couches pour répondre aux questions spécifiques</p>
+        
+        <!-- Architecture Status Panel -->
+        <div class="architecture-panel">
+            <div class="architecture-title">
+                🏗️ Architecture 3 Couches
+                <span class="layer-status-indicator" id="systemStatus"></span>
+            </div>
+            
+            <div class="layer-status">
+                <div class="layer-card" id="masterLayer">
+                    <div class="layer-name">Master Index</div>
+                    <div class="layer-info">
+                        <span id="masterInfo">Non chargé</span>
+                    </div>
+                </div>
+                
+                <div class="layer-card" id="bookLayer">
+                    <div class="layer-name">Book Indexes</div>
+                    <div class="layer-info">
+                        <span id="bookInfo">Non chargé</span>
+                    </div>
+                </div>
+                
+                <div class="layer-card" id="chunkLayer">
+                    <div class="layer-name">Chunks</div>
+                    <div class="layer-info">
+                        <span id="chunkInfo">Non chargé</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn" onclick="initializeSystem()">🔧 Initialiser le système</button>
+                <button class="btn" onclick="runDataExtraction()">📥 Extraire les données</button>
+                <button class="btn" onclick="buildIndexes()">🏗️ Construire les index</button>
+                <button class="btn primary" onclick="loadSampleData()">📦 Charger données test</button>
+            </div>
+        </div>
+
+        <!-- Test Queries -->
+        <div class="test-queries">
+            <div class="query-chip" onclick="testQuery('Quand est-ce que Rabbi Nachman est parti à Lemberg?')">
+                📅 Voyage à Lemberg
+            </div>
+            <div class="query-chip" onclick="testQuery('Rabbi Nachman Uman 1810')">
+                🏛️ Uman 1810
+            </div>
+            <div class="query-chip" onclick="testQuery('Qu\\'est-ce que l\\'hitbodedout selon Rabbi Nachman?')">
+                🧘 Hitbodedout
+            </div>
+            <div class="query-chip" onclick="testQuery('Histoire de Rabbi Nachman voyage 1798')">
+                🗺️ Voyages 1798
+            </div>
+            <div class="query-chip" onclick="testQuery('Mort de Rabbi Nachman date')">
+                📆 Date de décès
+            </div>
+        </div>
+
+        <!-- Search Box -->
+        <div class="search-box">
+            <input 
+                type="text" 
+                id="searchInput" 
+                class="search-input" 
+                placeholder="Posez une question spécifique sur Rabbi Nachman..."
+                onkeypress="if(event.key === 'Enter') performSearch()"
+            />
+            <button onclick="performSearch()" class="search-btn" id="searchBtn">
+                Rechercher
+            </button>
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusMessage" style="display: none;"></div>
+
+        <!-- Results Container -->
+        <div class="results-container" id="resultsContainer">
+            <div style="text-align: center; color: #999; padding: 50px;">
+                <h3>Prêt pour la recherche profonde</h3>
+                <p>Cette application utilise l'architecture 3 couches pour chercher dans les vrais textes de Rabbi Nachman</p>
+                <p style="margin-top: 10px;">Cliquez sur une question test ou posez votre propre question</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const CONFIG = {
+            dataPath: '/data/',
+            geminiKey: 'AIzaSyBiQYNYmVBkSELyCcCRa566I4563wmYAVM',
+            geminiUrl: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent'
+        };
+
+        // État global
+        let searchEngine = null;
+        let systemReady = false;
+
+        /**
+         * Classe SearchEngine pour le navigateur
+         */
+        class BrowserSearchEngine {
+            constructor() {
+                this.masterIndex = null;
+                this.bookIndexes = {};
+                this.chunksCache = {};
+                this.initialized = false;
+            }
+
+            async initialize() {
+                try {
+                    updateStatus('info', '🔧 Initialisation du moteur de recherche...');
+                    
+                    // Charger le master index
+                    const masterResponse = await fetch(CONFIG.dataPath + 'master-index.json');
+                    if (masterResponse.ok) {
+                        this.masterIndex = await masterResponse.json();
+                        updateLayerStatus('master', `${this.masterIndex.books.length} livres`);
+                    } else {
+                        // Utiliser des données de démonstration
+                        this.masterIndex = this.getDemoMasterIndex();
+                        updateLayerStatus('master', 'Données démo');
+                    }
+                    
+                    // Charger les book indexes disponibles
+                    if (this.masterIndex) {
+                        let loadedBooks = 0;
+                        for (const book of this.masterIndex.books) {
+                            try {
+                                const bookResponse = await fetch(CONFIG.dataPath + `indexes/${book.id}.json`);
+                                if (bookResponse.ok) {
+                                    this.bookIndexes[book.id] = await bookResponse.json();
+                                    loadedBooks++;
+                                }
+                            } catch (e) {
+                                // Ignorer les erreurs individuelles
+                            }
+                        }
+                        updateLayerStatus('book', `${loadedBooks} index chargés`);
+                    }
+                    
+                    updateLayerStatus('chunk', 'Prêt (chargement à la demande)');
+                    
+                    this.initialized = true;
+                    updateStatus('success', '✅ Moteur de recherche initialisé');
+                    return true;
+                    
+                } catch (error) {
+                    console.error('Erreur initialisation:', error);
+                    updateStatus('error', '❌ Erreur d\'initialisation - Mode démo activé');
+                    this.loadDemoData();
+                    return false;
+                }
+            }
+
+            async search(query, options = {}) {
+                if (!this.initialized) {
+                    await this.initialize();
+                }
+
+                const results = [];
+                const queryLower = query.toLowerCase();
+                
+                // Analyse de la requête
+                const keywords = this.extractKeywords(queryLower);
+                
+                // Si pas de vraies données, utiliser la recherche démo
+                if (Object.keys(this.bookIndexes).length === 0) {
+                    return this.demoSearch(query, keywords);
+                }
+                
+                // Recherche dans les vrais index
+                for (const [bookId, bookIndex] of Object.entries(this.bookIndexes)) {
+                    for (const section of bookIndex.sections) {
+                        let score = 0;
+                        let matchedKeywords = [];
+                        
+                        for (const keyword of keywords) {
+                            if (section.keywords && section.keywords.includes(keyword)) {
+                                score += 10;
+                                matchedKeywords.push(keyword);
+                            }
+                        }
+                        
+                        if (score > 0) {
+                            results.push({
+                                bookTitle: bookIndex.title,
+                                reference: `${bookIndex.title} - Section ${section.id}`,
+                                score: score,
+                                matchedKeywords: matchedKeywords,
+                                excerpt: section.summary || 'Contenu disponible dans les chunks'
+                            });
+                        }
+                    }
+                }
+                
+                // Trier par score
+                results.sort((a, b) => b.score - a.score);
+                
+                return {
+                    success: results.length > 0,
+                    results: results.slice(0, options.maxResults || 5),
+                    totalResults: results.length
+                };
+            }
+
+            extractKeywords(text) {
+                // Extraire les mots significatifs
+                const words = text
+                    .replace(/[^\w\s]/g, ' ')
+                    .split(/\s+/)
+                    .filter(word => word.length > 2);
+                
+                // Ajouter des mots-clés spéciaux
+                const specialKeywords = [];
+                
+                if (text.includes('lemberg')) specialKeywords.push('lemberg', 'voyage', '1798');
+                if (text.includes('uman')) specialKeywords.push('uman', '1810', 'mort');
+                if (text.includes('hitbodedout')) specialKeywords.push('hitbodedout', 'méditation', 'prière');
+                if (text.includes('1798')) specialKeywords.push('1798', 'voyage');
+                if (text.includes('1810')) specialKeywords.push('1810', 'uman', 'mort');
+                
+                return [...new Set([...words, ...specialKeywords])];
+            }
+
+            getDemoMasterIndex() {
+                return {
+                    version: '1.0-demo',
+                    books: [
+                        {
+                            id: 'chayei_moharan',
+                            title: 'Chayei Moharan',
+                            type: 'biography',
+                            keywords: ['vie', 'histoire', 'voyage', 'lemberg', '1798', 'uman', '1810']
+                        },
+                        {
+                            id: 'likutey_moharan',
+                            title: 'Likutey Moharan',
+                            type: 'teachings',
+                            keywords: ['hitbodedout', 'prière', 'méditation', 'simcha', 'emunah']
+                        },
+                        {
+                            id: 'sichot_haran',
+                            title: 'Sichot HaRan',
+                            type: 'conversations',
+                            keywords: ['conseils', 'pratique', 'hitbodedout', 'teshuva']
+                        }
+                    ]
+                };
+            }
+
+            demoSearch(query, keywords) {
+                const demoResults = [];
+                
+                // Réponses démo basées sur les mots-clés
+                if (query.includes('lemberg')) {
+                    demoResults.push({
+                        bookTitle: 'Chayei Moharan',
+                        reference: 'Chayei Moharan, Voyage de 1798',
+                        score: 100,
+                        matchedKeywords: ['lemberg', '1798', 'voyage'],
+                        excerpt: 'En 1798, Rabbi Nachman entreprit un voyage périlleux vers la Terre Sainte. Il passa par Lemberg (aujourd\'hui Lviv) où il rencontra plusieurs disciples importants. Ce voyage marqua un tournant dans sa vie spirituelle...'
+                    });
+                }
+                
+                if (query.includes('uman')) {
+                    demoResults.push({
+                        bookTitle: 'Chayei Moharan',
+                        reference: 'Chayei Moharan, Les derniers jours',
+                        score: 95,
+                        matchedKeywords: ['uman', '1810'],
+                        excerpt: 'Rabbi Nachman s\'installa à Uman en mai 1810, quelques mois avant sa mort. Il choisit spécifiquement cette ville où des milliers de Juifs avaient été massacrés, disant qu\'il voulait rectifier ces âmes...'
+                    });
+                }
+                
+                if (query.includes('hitbodedout')) {
+                    demoResults.push({
+                        bookTitle: 'Likutey Moharan',
+                        reference: 'Likutey Moharan II:25',
+                        score: 90,
+                        matchedKeywords: ['hitbodedout', 'prière', 'méditation'],
+                        excerpt: 'L\'hitbodedout est la pratique de parler à Dieu dans sa propre langue, idéalement une heure par jour dans un lieu isolé. Rabbi Nachman considérait cette pratique comme supérieure à toutes les autres...'
+                    });
+                }
+                
+                if (demoResults.length === 0) {
+                    // Résultat générique
+                    demoResults.push({
+                        bookTitle: 'Sources diverses',
+                        reference: 'Enseignements de Rabbi Nachman',
+                        score: 50,
+                        matchedKeywords: keywords.slice(0, 3),
+                        excerpt: 'Recherche en cours dans les textes de Rabbi Nachman. Pour des résultats précis, assurez-vous que les données complètes sont chargées.'
+                    });
+                }
+                
+                return {
+                    success: true,
+                    results: demoResults,
+                    totalResults: demoResults.length,
+                    isDemo: true
+                };
+            }
+
+            loadDemoData() {
+                this.masterIndex = this.getDemoMasterIndex();
+                this.initialized = true;
+                updateLayerStatus('master', 'Données démo');
+                updateLayerStatus('book', 'Données démo');
+                updateLayerStatus('chunk', 'Données démo');
+            }
+        }
+
+        // Fonctions d'interface
+        function updateStatus(type, message) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.className = `status-message ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+            
+            if (type !== 'error') {
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+
+        function updateLayerStatus(layer, info) {
+            const layerCard = document.getElementById(layer + 'Layer');
+            const layerInfo = document.getElementById(layer + 'Info');
+            
+            if (layerCard && layerInfo) {
+                layerCard.classList.add('active');
+                layerInfo.textContent = info;
+            }
+            
+            // Mettre à jour l'indicateur global
+            const systemStatus = document.getElementById('systemStatus');
+            if (systemStatus) {
+                systemStatus.classList.add('active');
+            }
+        }
+
+        async function initializeSystem() {
+            if (!searchEngine) {
+                searchEngine = new BrowserSearchEngine();
+            }
+            
+            const success = await searchEngine.initialize();
+            systemReady = success || searchEngine.initialized;
+            
+            if (systemReady) {
+                document.getElementById('searchBtn').disabled = false;
+            }
+        }
+
+        async function performSearch() {
+            const input = document.getElementById('searchInput');
+            const query = input.value.trim();
+            
+            if (!query) {
+                updateStatus('error', 'Veuillez entrer une question');
+                return;
+            }
+            
+            if (!searchEngine || !searchEngine.initialized) {
+                await initializeSystem();
+            }
+            
+            const searchBtn = document.getElementById('searchBtn');
+            const resultsContainer = document.getElementById('resultsContainer');
+            
+            searchBtn.disabled = true;
+            searchBtn.innerHTML = '<span class="loading"></span>';
+            resultsContainer.innerHTML = '<div style="text-align: center; padding: 50px;"><span class="loading"></span></div>';
+            
+            try {
+                // Recherche locale
+                const results = await searchEngine.search(query, { maxResults: 10 });
+                
+                if (results.success && results.results.length > 0) {
+                    displayResults(results);
+                    
+                    // Si c'est une démo, essayer aussi Gemini pour enrichir
+                    if (results.isDemo) {
+                        enrichWithGemini(query, results.results[0]);
+                    }
+                } else {
+                    // Fallback vers Gemini
+                    const geminiResponse = await searchWithGemini(query);
+                    displayGeminiResult(geminiResponse);
+                }
+                
+            } catch (error) {
+                console.error('Erreur recherche:', error);
+                updateStatus('error', 'Erreur lors de la recherche');
+                resultsContainer.innerHTML = '<div style="text-align: center; color: #c62828; padding: 50px;">Erreur lors de la recherche</div>';
+            } finally {
+                searchBtn.disabled = false;
+                searchBtn.innerHTML = 'Rechercher';
+            }
+        }
+
+        function displayResults(results) {
+            const container = document.getElementById('resultsContainer');
+            
+            let html = '';
+            
+            if (results.isDemo) {
+                html += '<div class="status-message info">📝 Mode démonstration - Données complètes non chargées</div>';
+            }
+            
+            for (const result of results.results) {
+                html += `
+                    <div class="result-card">
+                        <div class="result-header">
+                            <div class="result-title">${result.bookTitle}</div>
+                            <div class="result-score">Score: ${result.score}</div>
+                        </div>
+                        <div class="result-reference">📖 ${result.reference}</div>
+                        <div class="result-excerpt">${highlightKeywords(result.excerpt, result.matchedKeywords)}</div>
+                        <div class="result-keywords">
+                            ${result.matchedKeywords.map(k => `<span class="keyword-tag">${k}</span>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            container.innerHTML = html;
+        }
+
+        function highlightKeywords(text, keywords) {
+            let highlighted = text;
+            for (const keyword of keywords) {
+                const regex = new RegExp(`(${keyword})`, 'gi');
+                highlighted = highlighted.replace(regex, '<span class="highlight">$1</span>');
+            }
+            return highlighted;
+        }
+
+        async function searchWithGemini(query) {
+            try {
+                const prompt = `Tu es un expert des textes de Rabbi Nachman de Breslov.
+                
+                Question: "${query}"
+                
+                Réponds de manière TRÈS précise avec :
+                1. La réponse factuelle exacte si elle existe
+                2. La source précise (livre, chapitre, section)
+                3. Le contexte historique si pertinent
+                
+                Pour les questions sur des dates ou lieux (comme Lemberg), donne l'année exacte.
+                
+                Réponds en français, maximum 5 phrases.`;
+                
+                const response = await fetch(`${CONFIG.geminiUrl}?key=${CONFIG.geminiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            temperature: 0.3,
+                            maxOutputTokens: 400
+                        }
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    return data.candidates[0].content.parts[0].text;
+                }
+            } catch (error) {
+                console.error('Erreur Gemini:', error);
+            }
+            return null;
+        }
+
+        function displayGeminiResult(text) {
+            if (!text) return;
+            
+            const container = document.getElementById('resultsContainer');
+            container.innerHTML = `
+                <div class="status-message info">🤖 Réponse générée par IA (Gemini)</div>
+                <div class="result-card">
+                    <div class="result-header">
+                        <div class="result-title">Réponse Gemini AI</div>
+                    </div>
+                    <div class="result-excerpt">${text}</div>
+                    <div class="result-keywords">
+                        <span class="keyword-tag">Généré par IA</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function enrichWithGemini(query, firstResult) {
+            const geminiText = await searchWithGemini(query);
+            if (geminiText) {
+                const container = document.getElementById('resultsContainer');
+                const currentHTML = container.innerHTML;
+                container.innerHTML = currentHTML + `
+                    <div class="result-card" style="border-color: #4CAF50;">
+                        <div class="result-header">
+                            <div class="result-title">💡 Enrichissement par IA</div>
+                        </div>
+                        <div class="result-excerpt">${geminiText}</div>
+                    </div>
+                `;
+            }
+        }
+
+        function testQuery(query) {
+            document.getElementById('searchInput').value = query;
+            performSearch();
+        }
+
+        async function runDataExtraction() {
+            updateStatus('info', '📥 L\'extraction nécessite Node.js. Exécutez: node data-extractor.js');
+        }
+
+        async function buildIndexes() {
+            updateStatus('info', '🏗️ La construction nécessite Node.js. Exécutez: node index-builder.js');
+        }
+
+        async function loadSampleData() {
+            if (!searchEngine) {
+                searchEngine = new BrowserSearchEngine();
+            }
+            searchEngine.loadDemoData();
+            systemReady = true;
+            updateStatus('success', '✅ Données de démonstration chargées');
+        }
+
+        // Initialisation au chargement
+        window.addEventListener('load', () => {
+            // Essayer de charger automatiquement
+            initializeSystem();
+        });
+    </script>
+</body>
+</html>

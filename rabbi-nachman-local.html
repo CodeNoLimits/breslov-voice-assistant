@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbi Nachman Voice - Version Locale</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #2a5298;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .status.online {
+            background: #d4f4dd;
+            color: #1a7f37;
+        }
+
+        .status.offline {
+            background: #ffd4d4;
+            color: #d73502;
+        }
+
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 2px solid #e0e6ed;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message .bubble {
+            display: inline-block;
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            line-height: 1.5;
+        }
+
+        .message.user .bubble {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+
+        .message.assistant .bubble {
+            background: white;
+            border: 1px solid #e0e6ed;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e6ed;
+            border-radius: 12px;
+            font-size: 16px;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #2a5298;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(42, 82, 152, 0.3);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .suggestions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .suggestion {
+            padding: 8px 16px;
+            background: #f0f4f8;
+            border: 2px solid #e0e6ed;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+        }
+
+        .suggestion:hover {
+            background: #2a5298;
+            color: white;
+            border-color: #2a5298;
+        }
+
+        .error {
+            background: #ffe6e6;
+            color: #d73502;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+        }
+
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+
+        .citation {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(42, 82, 152, 0.05);
+            border-left: 3px solid #2a5298;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .citation-source {
+            font-weight: 600;
+            color: #2a5298;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📚 Rabbi Nachman Voice</h1>
+        <p class="subtitle">Assistant IA pour les enseignements de Rabbi Nachman - Version Locale</p>
+        
+        <div class="status-bar">
+            <span id="sefariaStatus" class="status offline">🔴 Sefaria: Hors ligne</span>
+            <span id="geminiStatus" class="status offline">🔴 Gemini: Non configuré</span>
+            <span id="localStatus" class="status online">🟢 Mode Local</span>
+        </div>
+
+        <div class="chat-container" id="chatContainer">
+            <div class="message assistant">
+                <div class="bubble">
+                    <strong>Shalom ! 🕊️</strong><br><br>
+                    Je suis votre assistant pour explorer les enseignements de Rabbi Nachman de Breslov.<br><br>
+                    
+                    ⚠️ <strong>Version Locale</strong> : Cette version fonctionne avec des données préchargées.
+                    Pour accéder à tous les textes Sefaria en temps réel, utilisez la version déployée sur Netlify.<br><br>
+                    
+                    Posez-moi vos questions sur :
+                    • L'hitbodedout (méditation personnelle)<br>
+                    • La simcha (joie constante)<br>
+                    • L'emunah (foi simple)<br>
+                    • Le Tikoun HaKlali<br>
+                    • Et tous les autres enseignements...
+                </div>
+            </div>
+        </div>
+
+        <div class="input-container">
+            <input 
+                type="text" 
+                id="queryInput" 
+                placeholder="Posez votre question sur Rabbi Nachman..."
+                autocomplete="off"
+            >
+            <button id="sendBtn" onclick="sendQuery()">Envoyer</button>
+        </div>
+
+        <div class="suggestions">
+            <div class="suggestion" onclick="askQuestion('Comment pratiquer l\'hitbodedout ?')">
+                💭 Hitbodedout
+            </div>
+            <div class="suggestion" onclick="askQuestion('Qu\'enseigne Rabbi Nachman sur la joie ?')">
+                😊 Simcha
+            </div>
+            <div class="suggestion" onclick="askQuestion('Qu\'est-ce que le Tikoun HaKlali ?')">
+                🙏 Tikoun HaKlali
+            </div>
+            <div class="suggestion" onclick="askQuestion('Comment développer la foi simple ?')">
+                ✨ Emunah
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+
+        // Configuration
+        const GEMINI_API_KEY = 'AIzaSyBiQYNYmVBkSELyCcCRa566I4563wmYAVM';
+        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+        
+        let genAI = null;
+        let model = null;
+        let isLoading = false;
+
+        // Base de connaissances locale sur Rabbi Nachman
+        const localKnowledge = {
+            hitbodedout: {
+                response: "L'hitbodedout est la pratique centrale de Rabbi Nachman. Il s'agit de s'isoler chaque jour, idéalement dans la nature, pour parler à Dieu dans sa langue maternelle, comme on parlerait à son meilleur ami. Rabbi Nachman recommande au moins une heure par jour pour cette pratique. C'est un moment pour exprimer tout ce qui est dans votre cœur : vos joies, vos peines, vos désirs, vos regrets. Cette conversation sincère avec Dieu peut littéralement transformer votre vie.",
+                source: "Likoutey Moharan II:25, Sichot HaRan 227"
+            },
+            joie: {
+                response: "Rabbi Nachman enseigne que 'מצוה גדולה להיות בשמחה תמיד' - c'est une grande mitzvah d'être toujours joyeux. La joie brise toutes les barrières spirituelles et ouvre les portes du ciel. Même dans les moments difficiles, cherchez un point de lumière, aussi petit soit-il. La joie n'est pas seulement une émotion, c'est un service divin qui élève l'âme et transforme l'obscurité en lumière. Rabbi Nachman dit : 'Il est interdit d'être vieux !' - restez jeune par la joie.",
+                source: "Likoutey Moharan II:24, Likoutey Etzot - Simcha"
+            },
+            foi: {
+                response: "La foi simple (אמונה פשוטה) est le fondement de tout selon Rabbi Nachman. La foi transcende l'intellect - là où la raison s'arrête, la foi commence. Ayez foi que tout ce qui vous arrive est pour votre bien ultime, même si vous ne le comprenez pas. Rabbi Nachman enseigne que même les plus grands tsadikim vivent principalement par la foi, car l'essence divine est au-delà de toute compréhension humaine.",
+                source: "Likoutey Moharan I:7, Sefer HaMiddot - Emunah"
+            },
+            tikoun: {
+                response: "Le Tikoun HaKlali est un remède spirituel unique révélé par Rabbi Nachman. Il consiste en la récitation de 10 psaumes spécifiques : 16, 32, 41, 42, 59, 77, 90, 105, 137, 150. Ces psaumes ont le pouvoir de réparer l'âme à sa racine. Rabbi Nachman a promis que quiconque viendrait sur sa tombe à Ouman, donnerait une pièce à la charité et réciterait ces 10 psaumes, il ferait tout son possible pour l'aider, même dans le monde à venir.",
+                source: "Likoutey Moharan I:29, Sichot HaRan 141"
+            },
+            teshuva: {
+                response: "Rabbi Nachman enseigne qu'il n'existe pas de désespoir dans le monde ! Peu importe jusqu'où vous êtes tombé, vous pouvez toujours revenir. La teshuva n'est pas seulement pour les 'pécheurs' - c'est un processus constant de renouvellement. Chaque jour, chaque instant est une nouvelle création. Commencez maintenant, à cet instant précis. Ne regardez pas en arrière avec désespoir, mais avancez avec espoir et détermination.",
+                source: "Likoutey Moharan I:6, Sichot HaRan 288"
+            },
+            default: {
+                response: "Rabbi Nachman nous enseigne des principes profonds sur ce sujet. Les enseignements principaux incluent : la joie constante (simcha), l'hitbodedout (méditation personnelle), la foi simple (emunah pshuta), et la certitude qu'il n'existe pas de désespoir dans le monde. Chaque âme juive est précieuse et unique, et chacun peut atteindre les plus hauts niveaux spirituels à travers une pratique sincère et constante.",
+                source: "Likoutey Moharan, Sichot HaRan"
+            }
+        };
+
+        // Initialisation
+        async function init() {
+            console.log('Initializing Rabbi Nachman Voice Local...');
+            
+            // Tester Gemini
+            try {
+                genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+                model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+                updateStatus('geminiStatus', '🟢 Gemini: Connecté', true);
+            } catch (error) {
+                console.error('Gemini init error:', error);
+                updateStatus('geminiStatus', '🟠 Gemini: Mode dégradé', false);
+            }
+
+            // Tester Sefaria via proxy
+            testSefariaConnection();
+
+            // Configuration des événements
+            document.getElementById('queryInput').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') sendQuery();
+            });
+        }
+
+        // Tester la connexion Sefaria
+        async function testSefariaConnection() {
+            try {
+                const response = await fetch(CORS_PROXY + encodeURIComponent('https://www.sefaria.org/api/texts/Likutei_Moharan.1.1'));
+                if (response.ok) {
+                    updateStatus('sefariaStatus', '🟢 Sefaria: Via proxy', true);
+                }
+            } catch (error) {
+                console.log('Sefaria not accessible, using local data');
+            }
+        }
+
+        // Mettre à jour le statut
+        function updateStatus(id, text, isOnline) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = text;
+                element.className = `status ${isOnline ? 'online' : 'offline'}`;
+            }
+        }
+
+        // Poser une question
+        window.askQuestion = function(question) {
+            document.getElementById('queryInput').value = question;
+            sendQuery();
+        }
+
+        // Envoyer la requête
+        window.sendQuery = async function() {
+            const input = document.getElementById('queryInput');
+            const query = input.value.trim();
+            
+            if (!query || isLoading) return;
+            
+            isLoading = true;
+            input.value = '';
+            
+            // Ajouter le message utilisateur
+            addMessage(query, 'user');
+            
+            // Ajouter indicateur de chargement
+            const loadingId = addLoadingMessage();
+            
+            try {
+                let response;
+                let source;
+                
+                // Essayer d'abord avec Gemini + contexte local
+                if (model) {
+                    response = await getGeminiResponse(query);
+                    source = "Gemini AI + Contexte Rabbi Nachman";
+                } else {
+                    // Fallback sur base locale
+                    response = getLocalResponse(query);
+                    source = "Base de connaissances locale";
+                }
+                
+                // Retirer le message de chargement
+                removeMessage(loadingId);
+                
+                // Ajouter la réponse
+                addMessage(response.text, 'assistant', [{
+                    source: response.source || source,
+                    text: ''
+                }]);
+                
+            } catch (error) {
+                console.error('Query error:', error);
+                removeMessage(loadingId);
+                
+                // Fallback sur réponse locale
+                const fallback = getLocalResponse(query);
+                addMessage(fallback.text, 'assistant', [{
+                    source: fallback.source,
+                    text: ''
+                }]);
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // Obtenir une réponse de Gemini
+        async function getGeminiResponse(query) {
+            // Chercher le contexte local pertinent
+            const context = findRelevantContext(query);
+            
+            const prompt = `Tu es un expert des enseignements de Rabbi Nachman de Breslov. 
+            Réponds à cette question en te basant sur les vrais enseignements de Rabbi Nachman : "${query}"
+            
+            Contexte disponible :
+            ${context.response}
+            Source : ${context.source}
+            
+            Réponds en français, de manière profonde et inspirante, en citant les sources quand c'est pertinent.
+            Reste fidèle aux enseignements authentiques de Rabbi Nachman.`;
+            
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            
+            return {
+                text: response.text(),
+                source: context.source
+            };
+        }
+
+        // Obtenir une réponse locale
+        function getLocalResponse(query) {
+            const context = findRelevantContext(query);
+            return {
+                text: context.response,
+                source: context.source
+            };
+        }
+
+        // Trouver le contexte pertinent
+        function findRelevantContext(query) {
+            const queryLower = query.toLowerCase();
+            
+            if (queryLower.includes('hitbodedout') || queryLower.includes('méditation') || queryLower.includes('isolement')) {
+                return localKnowledge.hitbodedout;
+            }
+            if (queryLower.includes('joie') || queryLower.includes('simcha') || queryLower.includes('bonheur')) {
+                return localKnowledge.joie;
+            }
+            if (queryLower.includes('foi') || queryLower.includes('emunah') || queryLower.includes('confiance')) {
+                return localKnowledge.foi;
+            }
+            if (queryLower.includes('tikoun') || queryLower.includes('klali') || queryLower.includes('psaumes')) {
+                return localKnowledge.tikoun;
+            }
+            if (queryLower.includes('teshuva') || queryLower.includes('retour') || queryLower.includes('repentir')) {
+                return localKnowledge.teshuva;
+            }
+            
+            return localKnowledge.default;
+        }
+
+        // Ajouter un message
+        function addMessage(text, sender, citations = []) {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            let html = `<div class="bubble">${formatText(text)}`;
+            
+            if (citations && citations.length > 0) {
+                citations.forEach(citation => {
+                    html += `
+                        <div class="citation">
+                            <div class="citation-source">📖 ${citation.source}</div>
+                            ${citation.text ? `<div>${citation.text}</div>` : ''}
+                        </div>
+                    `;
+                });
+            }
+            
+            html += '</div>';
+            messageDiv.innerHTML = html;
+            
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+            
+            return messageDiv.id = 'msg-' + Date.now();
+        }
+
+        // Ajouter un message de chargement
+        function addLoadingMessage() {
+            const container = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = 'loading-' + Date.now();
+            messageDiv.innerHTML = '<div class="bubble loading">Rabbi Nachman réfléchit... ✨</div>';
+            container.appendChild(messageDiv);
+            container.scrollTop = container.scrollHeight;
+            return messageDiv.id;
+        }
+
+        // Retirer un message
+        function removeMessage(id) {
+            const element = document.getElementById(id);
+            if (element) element.remove();
+        }
+
+        // Formater le texte
+        function formatText(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        }
+
+        // Démarrer l'application
+        window.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>

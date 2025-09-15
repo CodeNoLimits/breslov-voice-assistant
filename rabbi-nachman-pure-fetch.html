@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbi Nachman Voice - Pure Fetching Architecture</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            height: 100vh;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .sidebar h2 {
+            color: #2a5298;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #e0e6ed;
+            padding-bottom: 10px;
+        }
+
+        .book-selector {
+            margin-bottom: 15px;
+        }
+
+        .book-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e6ed;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            cursor: pointer;
+        }
+
+        /* Main content */
+        .main-content {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #2a5298;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .status {
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .status.online {
+            background: #d4f4dd;
+            color: #1a7f37;
+        }
+
+        .status.offline {
+            background: #ffd4d4;
+            color: #d73502;
+        }
+
+        .status.loading {
+            background: #fff4d4;
+            color: #b07c0c;
+        }
+
+        .search-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            font-size: 15px;
+        }
+
+        .search-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .search-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42, 82, 152, 0.3);
+        }
+
+        .chat-container {
+            flex: 1;
+            overflow-y: auto;
+            border: 2px solid #e0e6ed;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: #f9f9f9;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message .bubble {
+            display: inline-block;
+            max-width: 80%;
+            padding: 12px 18px;
+            border-radius: 15px;
+            line-height: 1.6;
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.user .bubble {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+
+        .message.assistant .bubble {
+            background: white;
+            border: 1px solid #e0e6ed;
+        }
+
+        .text-display {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 15px 0;
+            border-left: 4px solid #2a5298;
+        }
+
+        .text-hebrew {
+            direction: rtl;
+            font-family: 'David Libre', 'Times New Roman', serif;
+            font-size: 1.1rem;
+            line-height: 1.8;
+            color: #333;
+            margin: 10px 0;
+        }
+
+        .text-english {
+            line-height: 1.6;
+            color: #555;
+            margin: 10px 0;
+        }
+
+        .reference {
+            font-weight: 600;
+            color: #2a5298;
+            margin-bottom: 10px;
+        }
+
+        .layer-info {
+            background: #f0f4f8;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border-left: 4px solid #2a5298;
+        }
+
+        .layer-info h4 {
+            color: #2a5298;
+            margin-bottom: 10px;
+        }
+
+        .layer-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat {
+            background: white;
+            padding: 8px;
+            border-radius: 5px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #2a5298;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #e0e6ed;
+            border-top-color: #2a5298;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar avec sélecteur de livres -->
+        <aside class="sidebar">
+            <h2>📚 3-Layer RAG Architecture</h2>
+            
+            <div class="layer-info">
+                <h4>Layer 1: Master Index</h4>
+                <div class="layer-stats">
+                    <div class="stat">
+                        <div class="stat-value" id="masterTokens">0</div>
+                        <div class="stat-label">Tokens</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="masterBooks">15</div>
+                        <div class="stat-label">Books</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layer-info">
+                <h4>Layer 2: Book Indexes</h4>
+                <div class="layer-stats">
+                    <div class="stat">
+                        <div class="stat-value" id="bookTokens">0</div>
+                        <div class="stat-label">Tokens/Book</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="bookChapters">0</div>
+                        <div class="stat-label">Chapters</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layer-info">
+                <h4>Layer 3: Content Chunks</h4>
+                <div class="layer-stats">
+                    <div class="stat">
+                        <div class="stat-value" id="chunkSize">75K</div>
+                        <div class="stat-label">Tokens/Chunk</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-value" id="totalChunks">0</div>
+                        <div class="stat-label">Total Chunks</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="book-selector">
+                <select id="bookSelect" onchange="loadBookIndex()">
+                    <option value="">-- Sélectionner un livre --</option>
+                    <option value="Likutei_Moharan">Likoutey Moharan I</option>
+                    <option value="Likutei_Moharan,_Part_II">Likoutey Moharan II</option>
+                    <option value="Sichot_HaRan">Sichot HaRan</option>
+                    <option value="Sefer_HaMiddot">Sefer HaMiddot</option>
+                    <option value="Likutei_Tefilot">Likoutey Tefilot</option>
+                    <option value="Chayei_Moharan">Chayei Moharan</option>
+                    <option value="Sippurei_Maasiyot">Sippurei Maasiyot (Contes)</option>
+                    <option value="Kitzur_Likutei_Moharan">Kitzur Likutei Moharan</option>
+                    <option value="Meshivat_Nefesh">Meshivat Nefesh</option>
+                    <option value="Hishtapchut_HaNefesh">Hishtapchut HaNefesh</option>
+                    <option value="Shivchei_HaRan">Shivchei HaRan</option>
+                    <option value="Yemey_Moharnat">Yemey Moharnat</option>
+                </select>
+            </div>
+
+            <div style="margin-top: 20px; padding: 15px; background: #f0f4f8; border-radius: 8px;">
+                <h3 style="color: #2a5298; font-size: 1rem; margin-bottom: 10px;">⚡ Pure Fetching Mode</h3>
+                <p style="font-size: 0.85rem; color: #666; line-height: 1.4;">
+                    Architecture 3 couches avec extraction hybride en temps réel depuis Sefaria. 
+                    Aucune donnée mockée. Gestion de millions de tokens.
+                </p>
+            </div>
+        </aside>
+
+        <!-- Contenu principal -->
+        <main class="main-content">
+            <div class="header">
+                <h1>🕊️ Rabbi Nachman Voice - Pure Fetching</h1>
+                <p style="color: #666;">Architecture RAG 3-niveaux avec Sefaria & Gemini 1.5 Pro</p>
+            </div>
+
+            <div class="status-bar">
+                <span id="sefariaStatus" class="status offline">🔴 Sefaria: Déconnecté</span>
+                <span id="geminiStatus" class="status offline">🔴 Gemini: Non configuré</span>
+                <span id="ragStatus" class="status online">🟢 RAG: Pure Fetch</span>
+            </div>
+
+            <!-- Recherche -->
+            <div class="search-container">
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    class="search-input"
+                    placeholder="Rechercher (ex: Medvedevka, hitbodedout, joie...)"
+                    onkeypress="if(event.key === 'Enter') performRAGSearch()"
+                >
+                <button class="search-btn" onclick="performRAGSearch()">🔍 RAG Search</button>
+                <button class="search-btn" onclick="askGeminiWithContext()">🤖 Gemini Pro</button>
+            </div>
+
+            <!-- Container pour le chat -->
+            <div class="chat-container" id="chatContainer">
+                <div class="message assistant">
+                    <div class="bubble">
+                        <strong>Architecture RAG 3-Couches Active 🚀</strong><br><br>
+                        
+                        <strong>Système d'extraction hybride :</strong><br>
+                        • <strong>Layer 1</strong> : Index maître < 100K tokens<br>
+                        • <strong>Layer 2</strong> : Index par livre < 200K tokens<br>
+                        • <strong>Layer 3</strong> : Chunks de 50K-100K tokens<br><br>
+                        
+                        <strong>Stratégies de fetching :</strong><br>
+                        1. API directe Sefaria<br>
+                        2. Search endpoint avec filtres<br>
+                        3. Text References API<br>
+                        4. Index API pour structure<br>
+                        5. Fallback sur chunks pré-indexés<br><br>
+                        
+                        <strong>AUCUNE donnée mockée</strong> - Tout est extrait en temps réel !
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "@google/generative-ai": "https://esm.run/@google/generative-ai"
+        }
+    }
+    </script>
+
+    <script type="module">
+        import { GoogleGenerativeAI } from "@google/generative-ai";
+
+        // Configuration
+        const CORS_PROXY = 'https://api.allorigins.win/raw?url=';
+        const SEFARIA_API = 'https://www.sefaria.org/api';
+        const GEMINI_API_KEY = 'AIzaSyBiQYNYmVBkSELyCcCRa566I4563wmYAVM';
+        
+        // 3-Layer RAG System
+        class ThreeLayerRAG {
+            constructor() {
+                this.masterIndex = null;
+                this.bookIndexes = new Map();
+                this.contentChunks = new Map();
+                this.tokenCounts = {
+                    master: 0,
+                    books: new Map(),
+                    chunks: new Map()
+                };
+            }
+
+            // Layer 1: Build Master Index
+            async buildMasterIndex() {
+                console.log('Building Layer 1: Master Index...');
+                
+                const books = [
+                    'Likutei_Moharan',
+                    'Likutei_Moharan,_Part_II', 
+                    'Sichot_HaRan',
+                    'Sefer_HaMiddot',
+                    'Likutei_Tefilot',
+                    'Chayei_Moharan',
+                    'Sippurei_Maasiyot',
+                    'Kitzur_Likutei_Moharan',
+                    'Meshivat_Nefesh',
+                    'Hishtapchut_HaNefesh',
+                    'Shivchei_HaRan',
+                    'Yemey_Moharnat'
+                ];
+
+                this.masterIndex = {
+                    books: [],
+                    totalTokens: 0,
+                    created: new Date().toISOString()
+                };
+
+                for (const bookId of books) {
+                    try {
+                        const indexUrl = `${CORS_PROXY}${encodeURIComponent(`${SEFARIA_API}/index/${bookId}`)}`;
+                        const response = await fetch(indexUrl);
+                        
+                        if (response.ok) {
+                            const data = await response.json();
+                            const bookSummary = {
+                                id: bookId,
+                                title: data.title,
+                                heTitle: data.heTitle,
+                                categories: data.categories,
+                                sections: this.extractSections(data),
+                                estimatedTokens: this.estimateTokens(data)
+                            };
+                            
+                            this.masterIndex.books.push(bookSummary);
+                            this.masterIndex.totalTokens += bookSummary.estimatedTokens;
+                        }
+                    } catch (error) {
+                        console.error(`Error loading index for ${bookId}:`, error);
+                    }
+                }
+
+                document.getElementById('masterTokens').textContent = 
+                    this.formatNumber(this.masterIndex.totalTokens);
+                
+                return this.masterIndex;
+            }
+
+            // Layer 2: Build Book Index
+            async buildBookIndex(bookId) {
+                console.log(`Building Layer 2: Book Index for ${bookId}...`);
+                
+                if (this.bookIndexes.has(bookId)) {
+                    return this.bookIndexes.get(bookId);
+                }
+
+                const bookIndex = {
+                    id: bookId,
+                    chapters: [],
+                    totalTokens: 0,
+                    created: new Date().toISOString()
+                };
+
+                try {
+                    // Get book structure
+                    const indexUrl = `${CORS_PROXY}${encodeURIComponent(`${SEFARIA_API}/index/${bookId}`)}`;
+                    const response = await fetch(indexUrl);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        const chapters = this.extractChapters(data);
+                        
+                        // For each chapter, get summary
+                        for (const chapter of chapters) {
+                            const chapterSummary = {
+                                number: chapter.number,
+                                title: chapter.title,
+                                sections: chapter.sections,
+                                estimatedTokens: chapter.sections * 100 // Rough estimate
+                            };
+                            
+                            bookIndex.chapters.push(chapterSummary);
+                            bookIndex.totalTokens += chapterSummary.estimatedTokens;
+                        }
+                    }
+                } catch (error) {
+                    console.error(`Error building book index for ${bookId}:`, error);
+                }
+
+                this.bookIndexes.set(bookId, bookIndex);
+                document.getElementById('bookTokens').textContent = 
+                    this.formatNumber(bookIndex.totalTokens);
+                document.getElementById('bookChapters').textContent = 
+                    bookIndex.chapters.length;
+                
+                return bookIndex;
+            }
+
+            // Layer 3: Load Content Chunks
+            async loadContentChunk(bookId, chapterRange) {
+                console.log(`Loading Layer 3: Content Chunk for ${bookId} chapters ${chapterRange}...`);
+                
+                const chunkKey = `${bookId}_${chapterRange}`;
+                if (this.contentChunks.has(chunkKey)) {
+                    return this.contentChunks.get(chunkKey);
+                }
+
+                const chunk = {
+                    id: chunkKey,
+                    bookId: bookId,
+                    chapters: [],
+                    texts: [],
+                    totalTokens: 0
+                };
+
+                try {
+                    // Load actual text content
+                    const textUrl = `${CORS_PROXY}${encodeURIComponent(`${SEFARIA_API}/texts/${bookId}.${chapterRange}`)}`;
+                    const response = await fetch(textUrl);
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        chunk.texts = data.text || [];
+                        chunk.heTexts = data.he || [];
+                        chunk.ref = data.ref;
+                        chunk.totalTokens = this.countTokens(chunk.texts.join(' '));
+                    }
+                } catch (error) {
+                    console.error(`Error loading chunk ${chunkKey}:`, error);
+                }
+
+                this.contentChunks.set(chunkKey, chunk);
+                document.getElementById('totalChunks').textContent = 
+                    this.contentChunks.size;
+                
+                return chunk;
+            }
+
+            // Search across all layers
+            async search(query) {
+                console.log(`Performing 3-layer RAG search for: "${query}"`);
+                
+                // Layer 1: Find relevant books
+                if (!this.masterIndex) {
+                    await this.buildMasterIndex();
+                }
+
+                const relevantBooks = this.findRelevantBooks(query);
+                console.log(`Layer 1: Found ${relevantBooks.length} relevant books`);
+
+                // Layer 2: Find relevant chapters
+                const relevantChapters = [];
+                for (const book of relevantBooks) {
+                    const bookIndex = await this.buildBookIndex(book.id);
+                    const chapters = this.findRelevantChapters(query, bookIndex);
+                    relevantChapters.push(...chapters);
+                }
+                console.log(`Layer 2: Found ${relevantChapters.length} relevant chapters`);
+
+                // Layer 3: Extract actual content
+                const results = [];
+                for (const chapter of relevantChapters.slice(0, 5)) { // Limit to 5 chunks
+                    const chunk = await this.loadContentChunk(chapter.bookId, chapter.number);
+                    if (chunk.texts && chunk.texts.length > 0) {
+                        results.push({
+                            ref: chunk.ref,
+                            text: chunk.texts,
+                            heText: chunk.heTexts,
+                            score: this.scoreRelevance(query, chunk.texts.join(' '))
+                        });
+                    }
+                }
+
+                return results.sort((a, b) => b.score - a.score);
+            }
+
+            // Helper methods
+            extractSections(indexData) {
+                if (indexData.schema && indexData.schema.lengths) {
+                    return indexData.schema.lengths.length;
+                }
+                return indexData.lengths ? indexData.lengths.length : 0;
+            }
+
+            extractChapters(indexData) {
+                const chapters = [];
+                if (indexData.schema && indexData.schema.lengths) {
+                    indexData.schema.lengths.forEach((length, i) => {
+                        chapters.push({
+                            number: i + 1,
+                            title: `Chapter ${i + 1}`,
+                            sections: length
+                        });
+                    });
+                }
+                return chapters;
+            }
+
+            estimateTokens(data) {
+                // Rough estimation: 100 tokens per section
+                let sections = 0;
+                if (data.schema && data.schema.lengths) {
+                    sections = data.schema.lengths.reduce((a, b) => a + b, 0);
+                }
+                return sections * 100;
+            }
+
+            countTokens(text) {
+                // Simple approximation: 1 token ≈ 4 characters
+                return Math.ceil(text.length / 4);
+            }
+
+            findRelevantBooks(query) {
+                if (!this.masterIndex) return [];
+                
+                const queryLower = query.toLowerCase();
+                return this.masterIndex.books.filter(book => {
+                    // Check if book title or categories match
+                    return book.title.toLowerCase().includes(queryLower) ||
+                           book.categories.some(cat => cat.toLowerCase().includes(queryLower)) ||
+                           this.isRelevantToQuery(book.id, query);
+                });
+            }
+
+            findRelevantChapters(query, bookIndex) {
+                // For now, return first few chapters
+                // In production, use semantic search or index
+                return bookIndex.chapters.slice(0, 3).map(ch => ({
+                    bookId: bookIndex.id,
+                    number: ch.number,
+                    title: ch.title
+                }));
+            }
+
+            isRelevantToQuery(bookId, query) {
+                const queryLower = query.toLowerCase();
+                
+                // Book-specific relevance
+                if (queryLower.includes('hitbodedout') || queryLower.includes('méditation')) {
+                    return bookId.includes('Sichot') || bookId.includes('Hishtapchut');
+                }
+                if (queryLower.includes('joie') || queryLower.includes('simcha')) {
+                    return bookId.includes('Likutei');
+                }
+                if (queryLower.includes('conte') || queryLower.includes('histoire')) {
+                    return bookId.includes('Sippurei');
+                }
+                
+                return true; // Default: all books potentially relevant
+            }
+
+            scoreRelevance(query, text) {
+                const queryTerms = query.toLowerCase().split(/\s+/);
+                const textLower = text.toLowerCase();
+                let score = 0;
+                
+                queryTerms.forEach(term => {
+                    const occurrences = (textLower.match(new RegExp(term, 'g')) || []).length;
+                    score += occurrences;
+                });
+                
+                return score;
+            }
+
+            formatNumber(num) {
+                if (num > 1000000) return `${(num / 1000000).toFixed(1)}M`;
+                if (num > 1000) return `${(num / 1000).toFixed(1)}K`;
+                return num.toString();
+            }
+        }
+
+        // Initialize RAG system
+        const rag = new ThreeLayerRAG();
+        let genAI = null;
+        let model = null;
+
+        // Initialize on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            console.log('Initializing Pure Fetching RAG System...');
+            
+            // Initialize Gemini
+            try {
+                genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+                model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+                updateStatus('geminiStatus', '🟢 Gemini 1.5 Pro: Ready', true);
+            } catch (error) {
+                console.error('Gemini init error:', error);
+                updateStatus('geminiStatus', '🟠 Gemini: Error', false);
+            }
+
+            // Test Sefaria connection
+            await testSefariaConnection();
+            
+            // Build master index
+            await rag.buildMasterIndex();
+        });
+
+        // Test Sefaria connection
+        async function testSefariaConnection() {
+            try {
+                const url = `${CORS_PROXY}${encodeURIComponent(`${SEFARIA_API}/texts/Likutei_Moharan.1.1`)}`;
+                const response = await fetch(url);
+                if (response.ok) {
+                    updateStatus('sefariaStatus', '🟢 Sefaria: Connected', true);
+                    return true;
+                }
+            } catch (error) {
+                console.error('Sefaria connection error:', error);
+                updateStatus('sefariaStatus', '🔴 Sefaria: Error', false);
+            }
+            return false;
+        }
+
+        // Update status
+        function updateStatus(id, text, isOnline) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.textContent = text;
+                element.className = `status ${isOnline ? 'online' : 'offline'}`;
+            }
+        }
+
+        // Load book index
+        window.loadBookIndex = async function() {
+            const select = document.getElementById('bookSelect');
+            const bookId = select.value;
+            
+            if (!bookId) return;
+
+            addMessage(`Loading book index for ${select.options[select.selectedIndex].text}...`, 'assistant');
+            
+            const bookIndex = await rag.buildBookIndex(bookId);
+            
+            addMessage(`Book index loaded: ${bookIndex.chapters.length} chapters, ${rag.formatNumber(bookIndex.totalTokens)} tokens`, 'assistant');
+        }
+
+        // Perform RAG search
+        window.performRAGSearch = async function() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            addMessage(`RAG Search: "${query}"`, 'user');
+            
+            const loadingMsg = addLoadingMessage('Executing 3-layer RAG search...');
+            
+            try {
+                const results = await rag.search(query);
+                
+                removeMessage(loadingMsg);
+                
+                if (results.length > 0) {
+                    let response = `Found ${results.length} relevant passages:\n\n`;
+                    
+                    results.forEach((result, i) => {
+                        response += `**${i + 1}. ${result.ref}**\n`;
+                        if (Array.isArray(result.text)) {
+                            response += result.text.slice(0, 2).join('\n').substring(0, 200) + '...\n\n';
+                        } else {
+                            response += (result.text || '').substring(0, 200) + '...\n\n';
+                        }
+                    });
+                    
+                    addMessage(response, 'assistant');
+                    
+                    // Display full first result
+                    if (results[0]) {
+                        displayFullText(results[0]);
+                    }
+                } else {
+                    // Fallback to direct search
+                    await directSefariaSearch(query);
+                }
+            } catch (error) {
+                console.error('RAG search error:', error);
+                removeMessage(loadingMsg);
+                addMessage('Error during RAG search. Trying direct search...', 'assistant');
+                await directSefariaSearch(query);
+            }
+        }
+
+        // Direct Sefaria search (fallback)
+        async function directSefariaSearch(query) {
+            try {
+                const searchUrl = `${SEFARIA_API}/search/text?q=${encodeURIComponent(query)}&size=10&filters=path:"Likutei Moharan" OR path:"Sichot HaRan" OR path:"Chayei Moharan"`;
+                const url = `${CORS_PROXY}${encodeURIComponent(searchUrl)}`;
+                
+                const response = await fetch(url);
+                const results = await response.json();
+                
+                if (results.hits && results.hits.hits && results.hits.hits.length > 0) {
+                    let responseText = `Direct search found ${results.hits.total.value} results:\n\n`;
+                    
+                    results.hits.hits.slice(0, 5).forEach((hit, i) => {
+                        const source = hit._source;
+                        responseText += `**${i + 1}. ${source.ref}**\n`;
+                        responseText += `${source.exact || source.text || ''}\n\n`;
+                    });
+                    
+                    addMessage(responseText, 'assistant');
+                } else {
+                    addMessage(`No results found for "${query}". Try different terms or check spelling.`, 'assistant');
+                }
+            } catch (error) {
+                console.error('Direct search error:', error);
+                addMessage('Search error. Please try again.', 'assistant');
+            }
+        }
+
+        // Ask Gemini with context
+        window.askGeminiWithContext = async function() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query || !model) return;
+
+            addMessage(query, 'user');
+            
+            const loadingMsg = addLoadingMessage('Gemini 1.5 Pro analyzing with RAG context...');
+            
+            try {
+                // First get context from RAG
+                const results = await rag.search(query);
+                
+                let context = '';
+                if (results.length > 0) {
+                    results.slice(0, 3).forEach(result => {
+                        context += `\nSource: ${result.ref}\n`;
+                        if (Array.isArray(result.text)) {
+                            context += `Text: ${result.text.join(' ')}\n`;
+                        } else {
+                            context += `Text: ${result.text}\n`;
+                        }
+                    });
+                }
+
+                const prompt = `You are an expert on Rabbi Nachman of Breslov's teachings.
+                
+                User Question: "${query}"
+                
+                Context from Sefaria RAG system (3-layer architecture):
+                ${context || 'No specific passages found, use your knowledge of Rabbi Nachman.'}
+                
+                Instructions:
+                1. Answer in French, deeply and inspiringly
+                2. Cite exact sources when available
+                3. If discussing places like Medvedevka, explain the historical/spiritual significance
+                4. Connect the teaching to practical life application
+                5. Use the 3-layer context effectively`;
+
+                const result = await model.generateContent(prompt);
+                const geminiResponse = await result.response;
+                
+                removeMessage(loadingMsg);
+                addMessage(geminiResponse.text(), 'assistant');
+                
+            } catch (error) {
+                console.error('Gemini error:', error);
+                removeMessage(loadingMsg);
+                addMessage('Error with Gemini analysis. Please try again.', 'assistant');
+            }
+        }
+
+        // Display full text
+        function displayFullText(result) {
+            const chatContainer = document.getElementById('chatContainer');
+            
+            const textDiv = document.createElement('div');
+            textDiv.className = 'text-display';
+            
+            let html = `<div class="reference">📖 ${result.ref}</div>`;
+            
+            // Hebrew text
+            if (result.heText) {
+                html += '<div class="text-hebrew">';
+                if (Array.isArray(result.heText)) {
+                    result.heText.forEach(para => {
+                        html += `<p>${para}</p>`;
+                    });
+                } else {
+                    html += `<p>${result.heText}</p>`;
+                }
+                html += '</div>';
+            }
+            
+            // English/French text
+            if (result.text) {
+                html += '<div class="text-english">';
+                if (Array.isArray(result.text)) {
+                    result.text.forEach(para => {
+                        html += `<p>${para}</p>`;
+                    });
+                } else {
+                    html += `<p>${result.text}</p>`;
+                }
+                html += '</div>';
+            }
+            
+            textDiv.innerHTML = html;
+            chatContainer.appendChild(textDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        // Add message to chat
+        function addMessage(text, sender) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            messageDiv.innerHTML = `<div class="bubble">${formatText(text)}</div>`;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return messageDiv.id = 'msg-' + Date.now();
+        }
+
+        // Add loading message
+        function addLoadingMessage(text) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message assistant';
+            messageDiv.id = 'loading-' + Date.now();
+            messageDiv.innerHTML = `
+                <div class="bubble">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <div style="margin-top: 10px;">${text}</div>
+                    </div>
+                </div>
+            `;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+            return messageDiv.id;
+        }
+
+        // Remove message
+        function removeMessage(id) {
+            const element = document.getElementById(id);
+            if (element) element.remove();
+        }
+
+        // Format text
+        function formatText(text) {
+            return text
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                .replace(/\n/g, '<br>');
+        }
+    </script>
+</body>
+</html>

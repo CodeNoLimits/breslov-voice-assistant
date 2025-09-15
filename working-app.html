@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbi Nachman Voice - Version Fonctionnelle</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+        }
+
+        h1 {
+            color: #764ba2;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .chat-container {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .user {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: 20%;
+            text-align: right;
+        }
+
+        .assistant {
+            background: white;
+            border: 2px solid #e0e0e0;
+            margin-right: 20%;
+        }
+
+        .source {
+            font-size: 0.85em;
+            color: #667eea;
+            margin-top: 5px;
+            font-style: italic;
+        }
+
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: #764ba2;
+        }
+
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .quick-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .chip {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .chip:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .status-indicator {
+            text-align: center;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            color: #2e7d32;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕊️ Rabbi Nachman Voice Assistant</h1>
+        <p class="subtitle">Explorez les enseignements de Rabbi Nachman de Breslov</p>
+        
+        <div class="status-indicator" id="status">
+            ✅ Prêt - Connecté à Gemini AI
+        </div>
+
+        <div class="quick-questions">
+            <div class="chip" onclick="askQuestion('Qu\'est-ce que l\'hitbodedout?')">🧘 Hitbodedout</div>
+            <div class="chip" onclick="askQuestion('Parle-moi de la joie selon Rabbi Nachman')">😊 Simcha</div>
+            <div class="chip" onclick="askQuestion('Qu\'est-ce que le Tikkun HaKlali?')">📖 Tikkun HaKlali</div>
+            <div class="chip" onclick="askQuestion('Explique Azamra')">🎵 Azamra</div>
+            <div class="chip" onclick="askQuestion('L\'importance de la foi')">🙏 Emunah</div>
+        </div>
+
+        <div class="chat-container" id="chat">
+            <div class="message assistant">
+                <div>Shalom ! Je suis votre assistant pour explorer les enseignements de Rabbi Nachman de Breslov.</div>
+                <div>Posez-moi une question ou cliquez sur un sujet ci-dessus.</div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <input 
+                type="text" 
+                id="input" 
+                placeholder="Posez votre question sur Rabbi Nachman..."
+                onkeypress="if(event.key === 'Enter') sendMessage()"
+            />
+            <button onclick="sendMessage()" id="sendBtn">Envoyer</button>
+        </div>
+    </div>
+
+    <script>
+        // Configuration Gemini
+        const GEMINI_API_KEY = 'AIzaSyBiQYNYmVBkSELyCcCRa566I4563wmYAVM';
+        const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+
+        // Base de connaissances intégrée
+        const KNOWLEDGE = {
+            hitbodedout: {
+                text: "L'hitbodedout est la pratique de la méditation solitaire et de la prière personnelle. Rabbi Nachman recommandait de passer au moins une heure par jour dans une conversation intime avec Dieu, de préférence dans la nature, en parlant dans sa langue maternelle.",
+                source: "Likutey Moharan II:25"
+            },
+            simcha: {
+                text: "Rabbi Nachman enseigne que c'est une grande mitzvah d'être toujours joyeux. La joie brise toutes les barrières spirituelles et permet à l'âme de s'élever. Même dans les moments difficiles, il faut chercher des points de joie.",
+                source: "Likutey Moharan II:24"
+            },
+            azamra: {
+                text: "Azamra - 'Je chanterai' - est le principe de toujours chercher le bien en soi et chez les autres. Même si une personne a très peu de bien, il faut se concentrer sur ce point positif pour construire et grandir.",
+                source: "Likutey Moharan I:282"
+            },
+            tikkun: {
+                text: "Le Tikkun HaKlali consiste en 10 Psaumes spécifiques (16, 32, 41, 42, 59, 77, 90, 105, 137, 150) que Rabbi Nachman a révélés comme remède général pour toutes les fautes, particulièrement les fautes sexuelles.",
+                source: "Rabbi Nachman's Tikkun"
+            },
+            emunah: {
+                text: "La foi (emunah) est le fondement de tout. Rabbi Nachman enseigne que même quand l'intellect ne peut pas comprendre, la foi simple nous connecte directement à Dieu. La foi transforme l'obscurité en lumière.",
+                source: "Sichot HaRan 5"
+            }
+        };
+
+        async function sendMessage() {
+            const input = document.getElementById('input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const chat = document.getElementById('chat');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            // Ajouter le message utilisateur
+            chat.innerHTML += `<div class="message user">${escapeHtml(message)}</div>`;
+            input.value = '';
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>';
+            chat.scrollTop = chat.scrollHeight;
+
+            try {
+                // Chercher dans la base de connaissances locale
+                let response = null;
+                const lowerMessage = message.toLowerCase();
+                
+                for (const [key, value] of Object.entries(KNOWLEDGE)) {
+                    if (lowerMessage.includes(key) || 
+                        (key === 'hitbodedout' && lowerMessage.includes('méditation')) ||
+                        (key === 'simcha' && lowerMessage.includes('joie')) ||
+                        (key === 'tikkun' && lowerMessage.includes('psaume')) ||
+                        (key === 'emunah' && lowerMessage.includes('foi')) ||
+                        (key === 'azamra' && lowerMessage.includes('azamra'))) {
+                        response = value;
+                        break;
+                    }
+                }
+
+                let finalResponse = '';
+                let source = '';
+
+                if (response) {
+                    // Utiliser la réponse de la base de connaissances
+                    finalResponse = response.text;
+                    source = response.source;
+                } else {
+                    // Utiliser Gemini pour une réponse générale
+                    const prompt = `Tu es un expert des enseignements de Rabbi Nachman de Breslov. 
+                    Réponds à cette question de manière authentique et profonde: "${message}"
+                    
+                    Instructions:
+                    - Base ta réponse sur les vrais enseignements de Rabbi Nachman
+                    - Sois concis mais profond
+                    - Si possible, mentionne un concept clé (hitbodedout, simcha, emunah, etc.)
+                    - Réponds en français`;
+
+                    const geminiResponse = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{
+                                parts: [{ text: prompt }]
+                            }],
+                            generationConfig: {
+                                temperature: 0.7,
+                                maxOutputTokens: 500
+                            }
+                        })
+                    });
+
+                    if (!geminiResponse.ok) {
+                        throw new Error('Erreur Gemini API');
+                    }
+
+                    const data = await geminiResponse.json();
+                    finalResponse = data.candidates[0].content.parts[0].text;
+                    source = "Réponse générée selon les enseignements";
+                }
+
+                // Ajouter la réponse
+                chat.innerHTML += `
+                    <div class="message assistant">
+                        <div>${escapeHtml(finalResponse)}</div>
+                        ${source ? `<div class="source">📖 ${escapeHtml(source)}</div>` : ''}
+                    </div>
+                `;
+
+                updateStatus('✅ Réponse générée avec succès', false);
+
+            } catch (error) {
+                console.error('Erreur:', error);
+                chat.innerHTML += `
+                    <div class="message assistant">
+                        <div style="color: #d32f2f;">Désolé, une erreur s'est produite. Veuillez réessayer.</div>
+                    </div>
+                `;
+                updateStatus('❌ Erreur de connexion', true);
+            } finally {
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = 'Envoyer';
+                chat.scrollTop = chat.scrollHeight;
+            }
+        }
+
+        function askQuestion(question) {
+            document.getElementById('input').value = question;
+            sendMessage();
+        }
+
+        function updateStatus(message, isError) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = isError ? 'status-indicator error' : 'status-indicator';
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // Test de connexion au démarrage
+        window.addEventListener('load', async () => {
+            try {
+                const response = await fetch(`${GEMINI_URL}?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: 'test' }] }],
+                        generationConfig: { maxOutputTokens: 10 }
+                    })
+                });
+                
+                if (response.ok) {
+                    updateStatus('✅ Connecté à Gemini AI - Prêt', false);
+                } else {
+                    updateStatus('⚠️ Mode hors ligne - Base de connaissances locale active', true);
+                }
+            } catch (error) {
+                updateStatus('⚠️ Mode hors ligne - Base de connaissances locale active', true);
+            }
+        });
+    </script>
+</body>
+</html>

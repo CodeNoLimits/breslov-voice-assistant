@@ -1,0 +1,30 @@
+[build]
+  command = "echo 'No build needed'"
+  functions = "netlify/functions"
+  publish = "."
+
+[build.environment]
+  NODE_VERSION = "18"
+  OPENROUTER_API_KEY = "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"
+
+[[redirects]]
+  from = "/api/*"
+  to = "/.netlify/functions/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/"
+  to = "/index.html"
+  status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+[functions]
+  node_bundler = "esbuild"
+  included_files = ["data/**"]

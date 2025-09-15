@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test APIs - Rabbi Nachman Voice</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #0f0;
+        }
+        .test {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #0f0;
+            border-radius: 5px;
+        }
+        .success { color: #0f0; }
+        .error { color: #f00; }
+        .warning { color: #ff0; }
+        button {
+            background: #0f0;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔬 Test des APIs - Rabbi Nachman Voice</h1>
+    
+    <div class="test">
+        <h2>1. Test Gemini API</h2>
+        <button onclick="testGemini()">Tester Gemini</button>
+        <pre id="gemini-result"></pre>
+    </div>
+
+    <div class="test">
+        <h2>2. Test Sefaria API</h2>
+        <button onclick="testSefaria()">Tester Sefaria</button>
+        <pre id="sefaria-result"></pre>
+    </div>
+
+    <div class="test">
+        <h2>3. Test Text-to-Speech</h2>
+        <button onclick="testTTS()">Tester TTS</button>
+        <pre id="tts-result"></pre>
+    </div>
+
+    <div class="test">
+        <h2>4. Test Recherche Contextuelle</h2>
+        <input type="text" id="query" placeholder="Ex: Qu'est-ce que l'hitbodedout?" style="width: 300px; padding: 5px;">
+        <button onclick="testContextualSearch()">Rechercher</button>
+        <pre id="search-result"></pre>
+    </div>
+
+    <div class="test">
+        <h2>5. Test Netlify Functions</h2>
+        <button onclick="testNetlifyFunction()">Tester Netlify Function</button>
+        <pre id="netlify-result"></pre>
+    </div>
+
+    <script>
+        const GEMINI_KEY = 'AIzaSyBiQYNYmVBkSELyCcCRa566I4563wmYAVM';
+        const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent';
+
+        async function testGemini() {
+            const result = document.getElementById('gemini-result');
+            result.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: "Réponds en une phrase: Qu'est-ce que l'hitbodedout selon Rabbi Nachman?"
+                            }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 200
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.candidates) {
+                    result.innerHTML = `<span class="success">✅ GEMINI FONCTIONNE!</span>\n`;
+                    result.innerHTML += `Réponse: ${data.candidates[0].content.parts[0].text}\n`;
+                    result.innerHTML += `\nStatut: ${response.status}`;
+                } else {
+                    result.innerHTML = `<span class="error">❌ GEMINI ERREUR</span>\n`;
+                    result.innerHTML += JSON.stringify(data, null, 2);
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERREUR RÉSEAU</span>\n${error.message}`;
+            }
+        }
+
+        async function testSefaria() {
+            const result = document.getElementById('sefaria-result');
+            result.textContent = 'Testing...';
+            
+            try {
+                // Test 1: Texte spécifique
+                const response1 = await fetch('https://www.sefaria.org/api/texts/Likutei_Moharan.1.1');
+                const data1 = await response1.json();
+                
+                // Test 2: Index
+                const response2 = await fetch('https://www.sefaria.org/api/index/Likutei_Moharan');
+                const data2 = await response2.json();
+                
+                result.innerHTML = `<span class="success">✅ SEFARIA FONCTIONNE!</span>\n`;
+                result.innerHTML += `\nTexte récupéré: ${data1.ref || 'N/A'}\n`;
+                result.innerHTML += `Hébreu: ${data1.he ? data1.he[0]?.substring(0, 50) + '...' : 'Non disponible'}\n`;
+                result.innerHTML += `\nIndex: ${data2.title || 'N/A'}\n`;
+                result.innerHTML += `Sections: ${data2.schema?.lengths?.[0] || 'N/A'}`;
+                
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERREUR SEFARIA</span>\n${error.message}`;
+            }
+        }
+
+        function testTTS() {
+            const result = document.getElementById('tts-result');
+            
+            if ('speechSynthesis' in window) {
+                result.innerHTML = `<span class="success">✅ TTS DISPONIBLE!</span>\n`;
+                
+                const voices = speechSynthesis.getVoices();
+                const frenchVoices = voices.filter(v => v.lang.includes('fr'));
+                
+                result.innerHTML += `\nVoix disponibles: ${voices.length}\n`;
+                result.innerHTML += `Voix françaises: ${frenchVoices.length}\n\n`;
+                
+                // Test de synthèse
+                const utterance = new SpeechSynthesisUtterance("Shalom ! Je suis votre assistant Rabbi Nachman.");
+                utterance.lang = 'fr-FR';
+                utterance.rate = 0.9;
+                
+                if (frenchVoices.length > 0) {
+                    utterance.voice = frenchVoices[0];
+                }
+                
+                speechSynthesis.speak(utterance);
+                result.innerHTML += `🔊 AUDIO EN COURS...`;
+                
+            } else {
+                result.innerHTML = `<span class="error">❌ TTS NON DISPONIBLE</span>`;
+            }
+        }
+
+        async function testContextualSearch() {
+            const query = document.getElementById('query').value;
+            const result = document.getElementById('search-result');
+            
+            if (!query) {
+                result.innerHTML = '<span class="warning">Entrez une question</span>';
+                return;
+            }
+            
+            result.textContent = 'Recherche en cours...';
+            
+            try {
+                // Créer un prompt plus précis pour Gemini
+                const prompt = `Tu es un expert des textes de Rabbi Nachman de Breslov.
+                
+                Question de l'utilisateur: "${query}"
+                
+                Instructions STRICTES:
+                1. Réponds UNIQUEMENT basé sur les vrais enseignements de Rabbi Nachman
+                2. Cite la source EXACTE (ex: Likutey Moharan I:282)
+                3. Si tu ne connais pas la réponse exacte, dis-le
+                4. Maximum 3 phrases
+                5. Sois TRÈS précis et spécifique
+                
+                Sources principales de Rabbi Nachman:
+                - Likutey Moharan (I et II)
+                - Sichot HaRan
+                - Sefer HaMidot
+                - Chayei Moharan
+                
+                Réponds maintenant:`;
+                
+                const response = await fetch(`${GEMINI_URL}?key=${GEMINI_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.3, // Plus bas pour plus de précision
+                            maxOutputTokens: 300
+                        }
+                    })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok && data.candidates) {
+                    const answer = data.candidates[0].content.parts[0].text;
+                    result.innerHTML = `<span class="success">✅ RÉPONSE CONTEXTUELLE:</span>\n\n`;
+                    result.innerHTML += answer;
+                    
+                    // TTS automatique
+                    if ('speechSynthesis' in window) {
+                        const utterance = new SpeechSynthesisUtterance(answer);
+                        utterance.lang = 'fr-FR';
+                        utterance.rate = 0.9;
+                        speechSynthesis.speak(utterance);
+                        result.innerHTML += '\n\n🔊 Audio en cours...';
+                    }
+                } else {
+                    result.innerHTML = `<span class="error">❌ Erreur de génération</span>`;
+                }
+                
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ ERREUR</span>\n${error.message}`;
+            }
+        }
+
+        async function testNetlifyFunction() {
+            const result = document.getElementById('netlify-result');
+            result.textContent = 'Testing...';
+            
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        message: "Test de la fonction Netlify"
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `<span class="success">✅ NETLIFY FUNCTION OK</span>\n`;
+                    result.innerHTML += JSON.stringify(data, null, 2);
+                } else {
+                    result.innerHTML = `<span class="warning">⚠️ Netlify Function non disponible (normal en local)</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="warning">⚠️ Pas sur Netlify (normal en local)</span>`;
+            }
+        }
+
+        // Test automatique au chargement
+        window.addEventListener('load', () => {
+            console.log('🔬 Page de test chargée');
+            
+            // Charger les voix TTS
+            if ('speechSynthesis' in window) {
+                speechSynthesis.getVoices();
+                speechSynthesis.onvoiceschanged = () => {
+                    console.log('Voix TTS chargées:', speechSynthesis.getVoices().length);
+                };
+            }
+        });
+    </script>
+</body>
+</html>

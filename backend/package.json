@@ -1,0 +1,48 @@
+{
+  "name": "rabbi-nachman-voice-backend",
+  "version": "1.0.0",
+  "description": "Backend for Rabbi Nachman Voice App",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "test": "vitest",
+    "lint": "eslint src --ext .ts",
+    "extract": "tsx src/scripts/extract-all.ts",
+    "build:indexes": "tsx src/scripts/build-indexes.ts"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.21.0",
+    "@types/express": "^4.17.21",
+    "@types/multer": "^2.0.0",
+    "axios": "^1.7.7",
+    "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "express-rate-limit": "^7.4.0",
+    "helmet": "^7.1.0",
+    "ioredis": "^5.4.1",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.2",
+    "openai": "^4.58.0",
+    "pg": "^8.12.0",
+    "pgvector": "^0.2.0",
+    "puppeteer": "^23.4.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.10",
+    "@types/pg": "^8.11.6",
+    "@typescript-eslint/eslint-plugin": "^7.16.0",
+    "@typescript-eslint/parser": "^7.16.0",
+    "eslint": "^8.57.0",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.3"
+  }
+}

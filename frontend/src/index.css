@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply scroll-smooth;
+  }
+  
+  body {
+    @apply bg-gray-950 text-gray-100 antialiased;
+  }
+  
+  /* Hebrew text styling */
+  .hebrew {
+    @apply font-hebrew text-right;
+    direction: rtl;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-gray-900;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-gray-700 rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-600;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply px-6 py-3 bg-primary-600 text-white rounded-lg font-medium
+           hover:bg-primary-700 transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
+           focus:ring-offset-gray-950 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-secondary {
+    @apply px-6 py-3 bg-gray-800 text-gray-100 rounded-lg font-medium
+           hover:bg-gray-700 transition-colors duration-200
+           focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+           focus:ring-offset-gray-950 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .glass-panel {
+    @apply bg-gray-900/50 backdrop-blur-xl border border-gray-800 rounded-xl;
+  }
+  
+  .text-gradient {
+    @apply bg-gradient-to-r from-primary-400 to-accent-400 bg-clip-text text-transparent;
+  }
+}
+
+@layer utilities {
+  .animation-delay-200 {
+    animation-delay: 200ms;
+  }
+  
+  .animation-delay-400 {
+    animation-delay: 400ms;
+  }
+  
+  .animation-delay-600 {
+    animation-delay: 600ms;
+  }
+}

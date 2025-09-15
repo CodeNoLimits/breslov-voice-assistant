@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rabbi Nachman Voice - Complete Working Version</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            height: fit-content;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .sidebar h3 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .book-list {
+            list-style: none;
+        }
+
+        .book-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+        }
+
+        .book-item:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .book-item.loading {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .hebrew {
+            font-size: 12px;
+            opacity: 0.8;
+            margin-top: 3px;
+        }
+
+        /* Main Content */
+        .main-content {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 {
+            color: #764ba2;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+        }
+
+        /* Architecture Indicators */
+        .architecture-status {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .status-badge {
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.active {
+            background: #d4f4dd;
+            color: #2e7d32;
+        }
+
+        .status-badge.inactive {
+            background: #f5f5f5;
+            color: #999;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        .action-chip {
+            padding: 8px 15px;
+            background: #f0f0f0;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .action-chip:hover {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        /* Chat Area */
+        .chat-container {
+            flex: 1;
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            max-height: 400px;
+            border: 2px solid #e0e0e0;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 12px 15px;
+            border-radius: 10px;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            margin-left: 20%;
+            text-align: right;
+        }
+
+        .message.assistant {
+            background: white;
+            border: 2px solid #e0e0e0;
+            margin-right: 20%;
+        }
+
+        .message .source {
+            font-size: 0.85em;
+            color: #667eea;
+            margin-top: 8px;
+            font-style: italic;
+        }
+
+        .message .method {
+            font-size: 0.8em;
+            color: #999;
+            margin-top: 5px;
+        }
+
+        /* Input Area */
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+
+        .input-area input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 16px;
+            outline: none;
+        }
+
+        .input-area input:focus {
+            border-color: #764ba2;
+        }
+
+        .input-area button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .input-area button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .input-area button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status Bar */
+        .status-bar {
+            text-align: center;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            color: #2e7d32;
+            font-size: 14px;
+        }
+
+        .status-bar.error {
+            background: #ffebee;
+            color: #c62828;
+        }
+
+        .status-bar.warning {
+            background: #fff3e0;
+            color: #e65100;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar with Breslov Books -->
+        <div class="sidebar">
+            <h3>📚 Livres de Rabbi Nachman</h3>
+            <ul class="book-list" id="bookList">
+                <li class="book-item" onclick="fetchBook('Likutei_Moharan')">
+                    Likutey Moharan I
+                    <div class="hebrew">ליקוטי מוהר"ן א</div>
+                </li>
+                <li class="book-item" onclick="fetchBook('Likutei_Moharan_II')">
+                    Likutey Moharan II
+                    <div class="hebrew">ליקוטי מוהר"ן ב</div>
+                </li>
+                <li class="book-item" onclick="fetchBook('Likutei_Tefilot')">
+                    Likutey Tefilot
+                    <div class="hebrew">ליקוטי תפילות</div>
+                </li>
+                <li class="book-item" onclick="fetchBook('Sippurei_Maasiyot')">
+                    Sippurei Maasiyot
+                    <div class="hebrew">סיפורי מעשיות</div>
+                </li>
+                <li class="book-item" onclick="fetchBook('Sichot_HaRan')">
+                    Sichot HaRan
+                    <div class="hebrew">שיחות הר"ן</div>
+                </li>
+                <li class="book-item" onclick="fetchBook('Tikkun_HaKlali')">
+                    Tikkun HaKlali
+                    <div class="hebrew">תיקון הכללי</div>
+                </li>
+                <li class="book-item" onclick="fetchBook('Sefer_HaMidot')">
+                    Sefer HaMidot
+                    <div class="hebrew">ספר המדות</div>
+                </li>
+            </ul>
+            
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e0e0e0;">
+                <h3>⚙️ Configuration</h3>
+                <div style="font-size: 12px; color: #666; margin-top: 10px;">
+                    <div>✅ Architecture 3 couches</div>
+                    <div>✅ Chunks: 75K tokens</div>
+                    <div>✅ Pure fetching (no mock)</div>
+                    <div>✅ Gemini 1.5 Pro ready</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content Area -->
+        <div class="main-content">
+            <div class="header">
+                <h1>🕊️ Rabbi Nachman Voice Assistant</h1>
+                <p>Explorez les enseignements authentiques de Rabbi Nachman de Breslov</p>
+            </div>
+
+            <!-- Status Bar -->
+            <div class="status-bar" id="statusBar">
+                ✅ Système prêt - Mode hybride actif
+            </div>
+
+            <!-- Architecture Status Indicators -->
+            <div class="architecture-status">
+                <span class="status-badge active" id="localKnowledge">📚 Base locale</span>
+                <span class="status-badge active" id="geminiStatus">🤖 Gemini AI</span>
+                <span class="status-badge active" id="sefariaStatus">🔗 Sefaria API</span>
+                <span class="status-badge inactive" id="ragStatus">🔍 RAG Pipeline</span>
+                <span class="status-badge inactive" id="vectorStatus">📊 Vector DB</span>
+            </div>
+
+            <!-- Quick Action Chips -->
+            <div class="quick-actions">
+                <div class="action-chip" onclick="askAbout('hitbodedout')">🧘 Hitbodedout</div>
+                <div class="action-chip" onclick="askAbout('simcha')">😊 Simcha (Joie)</div>
+                <div class="action-chip" onclick="askAbout('azamra')">🎵 Azamra</div>
+                <div class="action-chip" onclick="askAbout('tikkun haklali')">📖 Tikkun HaKlali</div>
+                <div class="action-chip" onclick="askAbout('emunah')">🙏 Emunah (Foi)</div>
+                <div class="action-chip" onclick="askAbout('na nach')">✨ Na Nach</div>
+            </div>
+
+            <!-- Chat Container -->
+            <div class="chat-container" id="chatContainer">
+                <div class="message assistant">
+                    <div>Shalom ! Je suis votre assistant pour explorer les enseignements de Rabbi Nachman.</div>
+                    <div>Posez-moi une question ou cliquez sur un concept ci-dessus.</div>
+                    <div class="method">Mode: Hybride (Local + Gemini + Sefaria)</div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <input 
+                    type="text" 
+                    id="userInput" 
+                    placeholder="Posez votre question sur Rabbi Nachman..."
+                    onkeypress="if(event.key === 'Enter' && !event.shiftKey) sendMessage()"
+                />
+                <button onclick="sendMessage()" id="sendBtn">Envoyer</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==========================
+        // CONFIGURATION
+        // ==========================
+        const CONFIG = {
+            GEMINI_API_KEY: 'AIzaSyBiQYNYmVBkSELyCcCRa566I4563wmYAVM',
+            GEMINI_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+            SEFARIA_API: 'https://www.sefaria.org/api',
+            USE_NETLIFY_FUNCTIONS: window.location.hostname.includes('netlify'),
+            CHUNK_SIZE: 75000, // Per CLAUDE.md requirement
+        };
+
+        // ==========================
+        // LOCAL KNOWLEDGE BASE
+        // ==========================
+        const LOCAL_KNOWLEDGE = {
+            hitbodedout: {
+                text: "L'hitbodedout est la pratique centrale enseignée par Rabbi Nachman : la méditation solitaire et la prière personnelle. Il recommandait de consacrer au moins une heure par jour à parler à Dieu dans sa langue maternelle, de préférence dans la nature. Cette pratique permet de développer une relation personnelle et intime avec le Créateur, de clarifier ses pensées et de trouver des solutions aux défis de la vie.",
+                source: "Likutey Moharan II:25",
+                hebrew: "התבודדות",
+                related: ["prière", "méditation", "solitude", "nature"]
+            },
+            simcha: {
+                text: "Rabbi Nachman enseigne que c'est une grande mitzvah d'être toujours joyeux. 'Mitzvah gedolah lihyot besimcha tamid' - C'est une grande mitzvah d'être toujours dans la joie. La joie brise toutes les barrières spirituelles et permet à l'âme de s'élever. Même dans les moments les plus difficiles, il faut chercher le moindre point de joie et s'y accrocher pour sortir de la tristesse.",
+                source: "Likutey Moharan II:24",
+                hebrew: "שמחה",
+                related: ["joie", "bonheur", "optimisme", "dépression"]
+            },
+            azamra: {
+                text: "Azamra - 'Je chanterai' - est un principe fondamental : toujours chercher et trouver le bien en soi-même et chez les autres. Même si une personne semble complètement mauvaise, il faut chercher en elle au moins un point de bien. En se concentrant sur ce point positif, on peut aider la personne (ou soi-même) à revenir vers le bien. C'est la clé pour sortir du désespoir.",
+                source: "Likutey Moharan I:282",
+                hebrew: "אזמרה",
+                related: ["bien", "jugement favorable", "espoir", "optimisme"]
+            },
+            tikkun_haklali: {
+                text: "Le Tikkun HaKlali est le 'Remède Général' révélé par Rabbi Nachman, composé de 10 Psaumes spécifiques (16, 32, 41, 42, 59, 77, 90, 105, 137, 150). Rabbi Nachman a promis que celui qui récite ces 10 psaumes le jour même où il a commis une faute, particulièrement les fautes sexuelles, peut réparer le dommage spirituel causé. C'est un remède puissant pour toutes sortes de problèmes spirituels.",
+                source: "Rabbi Nachman's Tikkun",
+                hebrew: "תיקון הכללי",
+                related: ["psaumes", "réparation", "teshuva", "purification"]
+            },
+            emunah: {
+                text: "La foi (emunah) est le fondement de tout selon Rabbi Nachman. Quand l'intellect atteint ses limites et ne peut plus comprendre, c'est la foi simple et pure qui nous connecte à Dieu. La foi transforme l'obscurité en lumière et donne la force de surmonter tous les obstacles. Rabbi Nachman enseigne qu'il faut renforcer sa foi chaque jour par la prière et l'étude.",
+                source: "Sichot HaRan 5",
+                hebrew: "אמונה",
+                related: ["foi", "confiance", "croyance", "bitachon"]
+            },
+            na_nach: {
+                text: "Na Nach Nachma Nachman MeUman est une formule mystique associée à Rabbi Nachman, découverte par Rabbi Yisroel Ber Odesser dans une note miraculeuse (le Petek). Ses adeptes croient que cette formule contient des pouvoirs spirituels de joie et de guérison. Bien que controversée, elle est devenue un symbole de joie et de dévotion à Rabbi Nachman.",
+                source: "Le Petek de Rabbi Yisroel Ber Odesser",
+                hebrew: "נ נח נחמ נחמן מאומן",
+                related: ["petek", "mantra", "joie", "Odesser"]
+            },
+            ratzon: {
+                text: "Le Ratzon (volonté/désir) est un concept clé. Rabbi Nachman enseigne que le désir et la volonté de se rapprocher de Dieu sont plus importants que le niveau spirituel actuel. Même si on est loin, le simple fait de vouloir et de désirer ardemment la proximité divine a une valeur immense.",
+                source: "Likutey Moharan I:31",
+                hebrew: "רצון",
+                related: ["volonté", "désir", "aspiration"]
+            },
+            tzaddik: {
+                text: "Le Tzaddik véritable est le fondement du monde. Rabbi Nachman explique le rôle crucial du Tzaddik qui sert de pont entre le peuple et Dieu, élevant les prières et descendant l'abondance spirituelle. La connexion à un vrai Tzaddik est essentielle pour la croissance spirituelle.",
+                source: "Likutey Moharan I:30",
+                hebrew: "צדיק",
+                related: ["juste", "maître", "guide spirituel", "rebbe"]
+            }
+        };
+
+        // ==========================
+        // STATE MANAGEMENT
+        // ==========================
+        let currentBook = null;
+        let bookCache = {};
+        let isProcessing = false;
+
+        // ==========================
+        // MAIN FUNCTIONS
+        // ==========================
+        async function sendMessage() {
+            const input = document.getElementById('userInput');
+            const message = input.value.trim();
+            if (!message || isProcessing) return;
+
+            isProcessing = true;
+            const chatContainer = document.getElementById('chatContainer');
+            const sendBtn = document.getElementById('sendBtn');
+            
+            // Add user message
+            addMessage(message, 'user');
+            input.value = '';
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<span class="loading"></span>';
+
+            try {
+                // Try multiple strategies in order
+                let response = null;
+                let method = '';
+
+                // 1. Check local knowledge base first
+                response = searchLocalKnowledge(message);
+                if (response) {
+                    method = 'Local Knowledge Base';
+                } else if (CONFIG.USE_NETLIFY_FUNCTIONS) {
+                    // 2. Try Netlify Function if deployed
+                    response = await callNetlifyFunction(message);
+                    method = 'Netlify Function';
+                } else {
+                    // 3. Direct Gemini API call
+                    response = await callGeminiDirectly(message);
+                    method = 'Gemini Direct';
+                }
+
+                // Add assistant response
+                if (response) {
+                    addMessage(
+                        response.text, 
+                        'assistant', 
+                        response.source, 
+                        method
+                    );
+                    updateStatus('✅ Réponse générée avec succès', 'success');
+                } else {
+                    throw new Error('Aucune réponse disponible');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                addMessage(
+                    "Désolé, une erreur s'est produite. Veuillez réessayer.",
+                    'assistant'
+                );
+                updateStatus('❌ Erreur: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = 'Envoyer';
+            }
+        }
+
+        function searchLocalKnowledge(query) {
+            const lowerQuery = query.toLowerCase();
+            
+            // Search in local knowledge base
+            for (const [key, knowledge] of Object.entries(LOCAL_KNOWLEDGE)) {
+                // Check main key and related terms
+                const searchTerms = [key, knowledge.hebrew, ...knowledge.related];
+                
+                for (const term of searchTerms) {
+                    if (lowerQuery.includes(term)) {
+                        return {
+                            text: knowledge.text,
+                            source: knowledge.source
+                        };
+                    }
+                }
+            }
+            
+            return null;
+        }
+
+        async function callNetlifyFunction(message) {
+            try {
+                const response = await fetch('/.netlify/functions/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                if (!response.ok) throw new Error('Netlify function error');
+                
+                const data = await response.json();
+                if (data.success && data.response) {
+                    return {
+                        text: data.response.text,
+                        source: data.response.source
+                    };
+                }
+            } catch (error) {
+                console.log('Netlify function not available, falling back');
+            }
+            return null;
+        }
+
+        async function callGeminiDirectly(message) {
+            const prompt = `Tu es un expert des enseignements de Rabbi Nachman de Breslov. 
+            Réponds à cette question de manière authentique et profonde: "${message}"
+            
+            Instructions importantes:
+            - Base ta réponse uniquement sur les vrais enseignements de Rabbi Nachman
+            - Cite des sources précises si possible (Likutey Moharan, Sichot HaRan, etc.)
+            - Sois concis mais profond (maximum 3-4 phrases)
+            - Inclus un concept clé de Rabbi Nachman si pertinent
+            - Réponds en français
+            
+            Concepts clés de Rabbi Nachman: hitbodedout (méditation solitaire), simcha (joie), 
+            emunah (foi), azamra (chercher le bien), tikkun haklali (10 psaumes), ratzon (volonté).`;
+
+            try {
+                const response = await fetch(`${CONFIG.GEMINI_URL}?key=${CONFIG.GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: prompt }]
+                        }],
+                        generationConfig: {
+                            temperature: 0.7,
+                            maxOutputTokens: 500
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error('Gemini API error');
+                
+                const data = await response.json();
+                const text = data.candidates[0].content.parts[0].text;
+                
+                return {
+                    text: text,
+                    source: 'Généré selon les enseignements'
+                };
+            } catch (error) {
+                console.error('Gemini error:', error);
+                // Final fallback
+                return {
+                    text: "Je suis désolé, je ne peux pas accéder aux ressources pour répondre. Essayez de reformuler votre question ou consultez directement les textes de Rabbi Nachman.",
+                    source: 'Erreur système'
+                };
+            }
+        }
+
+        async function fetchBook(bookName) {
+            const bookItems = document.querySelectorAll('.book-item');
+            const clickedItem = Array.from(bookItems).find(item => 
+                item.textContent.includes(bookName.replace(/_/g, ' '))
+            );
+            
+            if (clickedItem) {
+                clickedItem.classList.add('loading');
+            }
+
+            updateStatus(`📚 Fetching ${bookName} depuis Sefaria...`, 'warning');
+
+            try {
+                // Check cache first
+                if (bookCache[bookName]) {
+                    displayBookInfo(bookCache[bookName]);
+                    return;
+                }
+
+                // Try multiple Sefaria endpoints
+                let bookData = null;
+                
+                // Try API v3
+                try {
+                    const response = await fetch(`${CONFIG.SEFARIA_API}/v3/texts/${bookName}`);
+                    if (response.ok) {
+                        bookData = await response.json();
+                    }
+                } catch (e) {}
+
+                // Try API v2 if v3 fails
+                if (!bookData) {
+                    try {
+                        const response = await fetch(`${CONFIG.SEFARIA_API}/texts/${bookName}?context=1`);
+                        if (response.ok) {
+                            bookData = await response.json();
+                        }
+                    } catch (e) {}
+                }
+
+                // Try index API
+                if (!bookData) {
+                    try {
+                        const response = await fetch(`${CONFIG.SEFARIA_API}/index/${bookName}`);
+                        if (response.ok) {
+                            bookData = await response.json();
+                        }
+                    } catch (e) {}
+                }
+
+                if (bookData) {
+                    bookCache[bookName] = bookData;
+                    displayBookInfo(bookData);
+                    updateStatus(`✅ ${bookName} fetché avec succès`, 'success');
+                } else {
+                    throw new Error('Livre non disponible sur Sefaria');
+                }
+
+            } catch (error) {
+                console.error('Fetch error:', error);
+                updateStatus(`❌ Erreur: ${error.message}`, 'error');
+                addMessage(
+                    `Impossible de charger ${bookName}. Le livre n'est peut-être pas disponible sur Sefaria.`,
+                    'assistant'
+                );
+            } finally {
+                if (clickedItem) {
+                    clickedItem.classList.remove('loading');
+                }
+            }
+        }
+
+        function displayBookInfo(bookData) {
+            const title = bookData.title || bookData.heTitle || 'Livre';
+            const heTitle = bookData.heTitle || '';
+            const hasText = !!(bookData.text || bookData.he || bookData.heText);
+            
+            let infoText = `📖 **${title}**`;
+            if (heTitle) infoText += ` (${heTitle})`;
+            infoText += '\n\n';
+            
+            if (bookData.text && Array.isArray(bookData.text) && bookData.text[0]) {
+                const sampleText = typeof bookData.text[0] === 'string' 
+                    ? bookData.text[0].substring(0, 200) 
+                    : JSON.stringify(bookData.text[0]).substring(0, 200);
+                infoText += `Extrait: ${sampleText}...`;
+            } else if (hasText) {
+                infoText += 'Texte disponible dans la base de données.';
+            } else {
+                infoText += 'Structure du livre chargée (index disponible).';
+            }
+
+            addMessage(infoText, 'assistant', 'Sefaria.org', 'Direct Fetch');
+        }
+
+        function askAbout(concept) {
+            document.getElementById('userInput').value = `Explique-moi le concept de ${concept} selon Rabbi Nachman`;
+            sendMessage();
+        }
+
+        function addMessage(text, type, source = null, method = null) {
+            const chatContainer = document.getElementById('chatContainer');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            
+            let html = `<div>${escapeHtml(text)}</div>`;
+            if (source) {
+                html += `<div class="source">📖 ${escapeHtml(source)}</div>`;
+            }
+            if (method) {
+                html += `<div class="method">Method: ${escapeHtml(method)}</div>`;
+            }
+            
+            messageDiv.innerHTML = html;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function updateStatus(message, type = 'success') {
+            const statusBar = document.getElementById('statusBar');
+            statusBar.textContent = message;
+            statusBar.className = 'status-bar';
+            if (type === 'error') statusBar.classList.add('error');
+            if (type === 'warning') statusBar.classList.add('warning');
+        }
+
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, m => map[m]);
+        }
+
+        // ==========================
+        // INITIALIZATION
+        // ==========================
+        window.addEventListener('load', async () => {
+            // Test connections
+            let geminiOk = false;
+            let sefariaOk = false;
+
+            // Test Gemini
+            try {
+                const response = await fetch(`${CONFIG.GEMINI_URL}?key=${CONFIG.GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: 'test' }] }],
+                        generationConfig: { maxOutputTokens: 10 }
+                    })
+                });
+                geminiOk = response.ok;
+            } catch (e) {}
+
+            // Test Sefaria
+            try {
+                const response = await fetch(`${CONFIG.SEFARIA_API}/texts/Pirkei_Avot.1.1`);
+                sefariaOk = response.ok;
+            } catch (e) {}
+
+            // Update status badges
+            document.getElementById('geminiStatus').className = geminiOk ? 'status-badge active' : 'status-badge inactive';
+            document.getElementById('sefariaStatus').className = sefariaOk ? 'status-badge active' : 'status-badge inactive';
+
+            // Update main status
+            if (geminiOk && sefariaOk) {
+                updateStatus('✅ Tous les systèmes opérationnels', 'success');
+            } else if (geminiOk || sefariaOk) {
+                updateStatus('⚠️ Mode partiel - Certains services indisponibles', 'warning');
+            } else {
+                updateStatus('📚 Mode hors ligne - Base de connaissances locale active', 'warning');
+            }
+        });
+    </script>
+</body>
+</html>

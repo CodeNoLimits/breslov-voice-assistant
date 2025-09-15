@@ -1,0 +1,9 @@
+node_modules/
+*.log
+.env
+.DS_Store
+*.zip
+deploy.zip
+final-deploy.zip
+voice-deploy.zip
+rabbi-nachman-complete.zip
